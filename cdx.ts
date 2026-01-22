@@ -1,125 +1,27 @@
 #!/usr/bin/env bun
-import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
+import { Command } from "commander";
+import { writeAuthFile } from "./lib/auth";
+import { loadConfig, saveConfig } from "./lib/config";
+import { loadKeychainPayload } from "./lib/keychain";
+import { runInteractiveMode } from "./lib/interactive";
+import { performLogin } from "./lib/oauth/login";
 
-type AccountRecord = {
-  accountId: string;
-  keychainService: string;
-};
+export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
+export { loadConfig, saveConfig } from "./lib/config";
+export { writeAuthFile } from "./lib/auth";
+export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
+export { runInteractiveMode } from "./lib/interactive";
 
-type Config = {
-  current: number;
-  accounts: AccountRecord[];
-};
-
-type OAuthPayload = {
-  refresh: string;
-  access: string;
-  expires: number;
-  accountId: string;
-};
-
-const CONFIG_DIR = path.join(os.homedir(), ".config", "cdx");
-const CONFIG_PATH = path.join(CONFIG_DIR, "accounts.json");
-const OPENCODE_AUTH_PATH = path.join(
-  os.homedir(),
-  ".local",
-  "share",
-  "opencode",
-  "auth.json",
-);
-
-const HELP_TEXT = `cdx - OpenCode account switcher
-
-Usage:
-  cdx switch
-`;
-
-const runSecurity = (args: string[]) => {
-  const result = Bun.spawnSync({
-    cmd: ["security", ...args],
-    stderr: "pipe",
-    stdout: "pipe",
-  });
-
-  if (result.exitCode !== 0) {
-    const message = result.stderr.toString().trim();
-    throw new Error(message || "Keychain command failed");
-  }
-
-  return result.stdout.toString();
-};
-
-const loadConfig = async (): Promise<Config> => {
-  if (!existsSync(CONFIG_PATH)) {
-    throw new Error(
-      `Missing config at ${CONFIG_PATH}. Create accounts.json to list Keychain services.`,
-    );
-  }
-
-  const raw = await readFile(CONFIG_PATH, "utf8");
-  const parsed = JSON.parse(raw) as Config;
-
-  if (!Array.isArray(parsed.accounts) || parsed.accounts.length === 0) {
-    throw new Error("accounts.json must include a non-empty accounts array.");
-  }
-
-  if (typeof parsed.current !== "number" || Number.isNaN(parsed.current)) {
-    parsed.current = 0;
-  }
-
-  return parsed;
-};
-
-const saveConfig = async (config: Config) => {
-  await mkdir(CONFIG_DIR, { recursive: true });
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
-};
-
-const loadKeychainPayload = (service: string): OAuthPayload => {
-  const raw = runSecurity(["find-generic-password", "-s", service, "-w"]).trim();
-  if (!raw) {
-    throw new Error(`No Keychain payload found for ${service}.`);
-  }
-
-  const parsed = JSON.parse(raw) as OAuthPayload;
-
-  if (!parsed.refresh || !parsed.access || !parsed.expires || !parsed.accountId) {
-    throw new Error(`Keychain payload for ${service} is missing required fields.`);
-  }
-
-  return parsed;
-};
-
-const writeAuthFile = async (payload: OAuthPayload) => {
-  const authDir = path.dirname(OPENCODE_AUTH_PATH);
-  await mkdir(authDir, { recursive: true });
-
-  const authJson = {
-    openai: {
-      type: "oauth",
-      refresh: payload.refresh,
-      access: payload.access,
-      expires: payload.expires,
-      accountId: payload.accountId,
-    },
-  };
-
-  await writeFile(OPENCODE_AUTH_PATH, JSON.stringify(authJson, null, 2), "utf8");
-};
-
-const switchAccount = async () => {
+export const switchAccount = async () => {
   const config = await loadConfig();
   const nextIndex = (config.current + 1) % config.accounts.length;
   const nextAccount = config.accounts[nextIndex];
 
-  if (!nextAccount?.keychainService) {
-    throw new Error("Account entry missing keychainService.");
+  if (!nextAccount?.accountId) {
+    throw new Error("Account entry missing accountId.");
   }
 
-  const payload = loadKeychainPayload(nextAccount.keychainService);
+  const payload = loadKeychainPayload(nextAccount.accountId);
   await writeAuthFile(payload);
 
   config.current = nextIndex;
@@ -129,26 +31,67 @@ const switchAccount = async () => {
   process.stdout.write(`${message}\n`);
 };
 
-const main = async () => {
-  const [, , command] = process.argv;
+export const interactiveMode = runInteractiveMode;
 
-  if (!command || command === "-h" || command === "--help") {
-    process.stdout.write(`${HELP_TEXT}\n`);
-    return;
-  }
+export const createProgram = (deps: { performLogin?: typeof performLogin } = {}) => {
+  const program = new Command();
+  const runLogin = deps.performLogin ?? performLogin;
 
-  if (command === "switch") {
-    await switchAccount();
-    return;
-  }
+  program
+    .name("cdx")
+    .description("OpenCode account switcher - manage multiple OpenAI Pro subscriptions")
+    .version("0.1.0");
 
-  throw new Error(`Unknown command: ${command}`);
+  program
+    .command("login")
+    .description("Add a new OpenAI account via OAuth")
+    .action(async () => {
+      try {
+        const result = await runLogin();
+        if (!result) {
+          process.stderr.write("Login failed.\n");
+          process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("switch")
+    .description("Switch to the next configured OpenAI account")
+    .action(async () => {
+      try {
+        await switchAccount();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program.action(async () => {
+    try {
+      await interactiveMode();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`${message}\n`);
+      process.exit(1);
+    }
+  });
+
+  return program;
 };
 
-try {
-  await main();
-} catch (error) {
+const main = async () => {
+  const program = createProgram();
+  await program.parseAsync(process.argv);
+};
+
+main().catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`${message}\n`);
   process.exit(1);
-}
+});
