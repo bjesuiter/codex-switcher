@@ -27,3 +27,4 @@ Implement interactive mode as the default CLI behavior.
 - [ ] Implement 'Remove account' option with confirmation
 - [ ] Show current active account indicator in menus
 - [ ] Handle Ctrl+C gracefully with outro message
+- [ ] Write tests using bun:test to validate interactive mode behavior

@@ -24,3 +24,4 @@ Set up the CLI foundation using commander.js for argument parsing.
 - [ ] Create basic commander.js program structure in cdx.ts
 - [ ] Configure default command to call interactive handler
 - [ ] Verify `bun run cdx.ts` works
+- [ ] Write tests using bun:test to validate CLI foundation behavior

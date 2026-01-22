@@ -40,3 +40,4 @@ Implement the `cdx switch` command to cycle through subscriptions.
 - [ ] Implement auth.json write function with correct format
 - [ ] Ensure ~/.local/share/opencode/ directory exists
 - [ ] Display which account is now active after switch
+- [ ] Write tests using bun:test to validate switch command behavior

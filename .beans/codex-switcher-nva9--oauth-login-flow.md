@@ -25,3 +25,4 @@ Implement OAuth login to add new OpenAI accounts.
 - [ ] Handle OAuth callback and token exchange
 - [ ] Store credentials in Keychain after successful login
 - [ ] Add `cdx login` command to commander.js
+- [ ] Write tests using bun:test to validate OAuth login flow behavior

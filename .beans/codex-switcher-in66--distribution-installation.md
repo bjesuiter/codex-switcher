@@ -21,3 +21,4 @@ Finalize package configuration for global installation.
 - [ ] Test `bun link` installation
 - [ ] Test `cdx` command works globally after link
 - [ ] Document installation steps in README.md
+- [ ] Write tests using bun:test to validate distribution and installation behavior

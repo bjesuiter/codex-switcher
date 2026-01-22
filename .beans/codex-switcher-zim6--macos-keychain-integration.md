@@ -26,3 +26,4 @@ Implement secure storage of OAuth secrets in macOS Keychain.
 - [ ] Implement keychain list function to enumerate stored accounts
 - [ ] Implement keychain delete function for account removal
 - [ ] Define account identifier format/schema
+- [ ] Write tests using bun:test to validate Keychain integration behavior
