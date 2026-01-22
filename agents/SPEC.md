@@ -36,6 +36,12 @@ OpenAI Pro subscriptions while keeping OAuth secrets in the macOS Keychain.
 }
 ```
 
+## CLI Framework
+
+- **Argument parsing & commands**: `commander.js`
+- **Interactive prompts**: `@clack/prompts`
+- **Default behavior**: Running `cdx` without any command launches interactive mode.
+
 ## Distribution
 
 - The CLI is a Bun script.
