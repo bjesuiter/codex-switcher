@@ -135,10 +135,18 @@ const handleRemoveAccount = async (): Promise<void> => {
     // Keychain entry may not exist
   }
 
+  const previousAccountId = config.accounts[config.current]?.accountId;
   config.accounts = config.accounts.filter((a) => a.accountId !== accountId);
 
-  if (config.current >= config.accounts.length) {
-    config.current = Math.max(0, config.accounts.length - 1);
+  if (config.accounts.length === 0) {
+    config.current = 0;
+  } else if (accountId === previousAccountId) {
+    // Removed the active account — reset to first
+    config.current = 0;
+  } else {
+    // Preserve the previously active account by finding its new index
+    const newIndex = config.accounts.findIndex((a) => a.accountId === previousAccountId);
+    config.current = newIndex >= 0 ? newIndex : 0;
   }
 
   await saveConfig(config);

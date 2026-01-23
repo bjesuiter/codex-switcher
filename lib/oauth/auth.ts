@@ -145,7 +145,7 @@ export const decodeJWT = (token: string): JWTPayload | null => {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     const payload = parts[1];
-    const decoded = Buffer.from(payload, "base64").toString("utf-8");
+    const decoded = Buffer.from(payload, "base64url").toString("utf-8");
     return JSON.parse(decoded) as JWTPayload;
   } catch {
     return null;

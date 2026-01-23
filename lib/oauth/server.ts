@@ -1,6 +1,8 @@
 import http from "node:http";
 import { CALLBACK_PORT } from "./constants";
 
+const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
+
 const SUCCESS_HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -94,10 +96,14 @@ export const startOAuthServer = (state: string): Promise<OAuthServer> => {
   return new Promise((resolve) => {
     server
       .listen(CALLBACK_PORT, "127.0.0.1", () => {
+        const timeout = setTimeout(() => finalize(null), AUTH_TIMEOUT_MS);
         resolve({
           port: CALLBACK_PORT,
           ready: true,
-          close: () => server.close(),
+          close: () => {
+            clearTimeout(timeout);
+            server.close();
+          },
           waitForCode: () => codePromise,
         });
       })

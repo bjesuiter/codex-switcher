@@ -38,30 +38,16 @@ export const saveKeychainPayload = (accountId: string, payload: OAuthPayload): v
   const service = getKeychainService(accountId);
   const payloadJson = JSON.stringify(payload);
 
-  const existsResult = runSecuritySafe(["find-generic-password", "-s", service]);
-
-  if (existsResult.success) {
-    runSecurity([
-      "add-generic-password",
-      "-a",
-      accountId,
-      "-s",
-      service,
-      "-w",
-      payloadJson,
-      "-U",
-    ]);
-  } else {
-    runSecurity([
-      "add-generic-password",
-      "-a",
-      accountId,
-      "-s",
-      service,
-      "-w",
-      payloadJson,
-    ]);
-  }
+  runSecurity([
+    "add-generic-password",
+    "-a",
+    accountId,
+    "-s",
+    service,
+    "-w",
+    payloadJson,
+    "-U",
+  ]);
 };
 
 export const loadKeychainPayload = (accountId: string): OAuthPayload => {
