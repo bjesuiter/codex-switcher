@@ -25,7 +25,7 @@ describe("cdx CLI", () => {
     it("has description set", () => {
       const program = createProgram();
       expect(program.description()).toBe(
-        "Manage multiple OpenAI Pro subscriptions in OpenCode",
+        "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
       );
     });
   });
