@@ -3,7 +3,11 @@ import { Command } from "commander";
 import { writeAuthFile } from "./lib/auth";
 import { loadConfig, saveConfig } from "./lib/config";
 import { loadKeychainPayload } from "./lib/keychain";
-import { handleSwitchAccount, runInteractiveMode } from "./lib/interactive";
+import {
+  handleLabelAccount,
+  handleSwitchAccount,
+  runInteractiveMode,
+} from "./lib/interactive";
 import { performLogin } from "./lib/oauth/login";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
@@ -99,6 +103,38 @@ export const createProgram = (
           await switchToAccount(accountId);
         } else {
           await handleSwitchAccount();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("label")
+    .description("Add or change label for an account")
+    .argument("[account]", "Account ID or current label to relabel")
+    .argument("[new-label]", "New label to assign")
+    .action(async (account: string | undefined, newLabel: string | undefined) => {
+      try {
+        if (account && newLabel) {
+          const config = await loadConfig();
+          const target = config.accounts.find(
+            (a) => a.accountId === account || a.label === account,
+          );
+          if (!target) {
+            throw new Error(
+              `Account "${account}" not found. Use 'cdx login' to add it.`,
+            );
+          }
+          target.label = newLabel;
+          await saveConfig(config);
+          process.stdout.write(
+            `Account ${target.accountId} labeled as "${newLabel}".\n`,
+          );
+        } else {
+          await handleLabelAccount();
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

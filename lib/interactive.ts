@@ -10,7 +10,7 @@ import {
 import { performLogin } from "./oauth/login";
 import type { Config } from "./types";
 
-type MenuAction = "list" | "switch" | "add" | "remove" | "exit";
+type MenuAction = "list" | "switch" | "add" | "remove" | "label" | "exit";
 
 const getAccountDisplay = (
   accountId: string,
@@ -175,6 +175,69 @@ const handleRemoveAccount = async (): Promise<void> => {
   p.log.success(`Removed account ${accountId}`);
 };
 
+export const handleLabelAccount = async (): Promise<void> => {
+  if (!configExists()) {
+    p.log.warning("No accounts configured.");
+    return;
+  }
+
+  const config = await loadConfig();
+
+  if (config.accounts.length === 0) {
+    p.log.warning("No accounts to label.");
+    return;
+  }
+
+  const currentAccountId = config.accounts[config.current]?.accountId;
+
+  const options = config.accounts.map((account) => ({
+    value: account.accountId,
+    label: getAccountDisplay(
+      account.accountId,
+      account.accountId === currentAccountId,
+      account.label,
+    ),
+  }));
+
+  const selected = await p.select({
+    message: "Select account to label:",
+    options,
+  });
+
+  if (p.isCancel(selected)) {
+    p.log.info("Cancelled.");
+    return;
+  }
+
+  const accountId = selected as string;
+  const account = config.accounts.find((a) => a.accountId === accountId);
+
+  const labelInput = await p.text({
+    message: "Enter new label (or leave empty to remove label):",
+    placeholder: "e.g. Work, Personal",
+    initialValue: account?.label ?? "",
+  });
+
+  if (p.isCancel(labelInput)) {
+    p.log.info("Cancelled.");
+    return;
+  }
+
+  const newLabel = labelInput?.trim() || undefined;
+  const target = config.accounts.find((a) => a.accountId === accountId);
+  if (target) {
+    target.label = newLabel;
+  }
+
+  await saveConfig(config);
+
+  if (newLabel) {
+    p.log.success(`Account ${accountId} labeled as "${newLabel}".`);
+  } else {
+    p.log.success(`Label removed from account ${accountId}.`);
+  }
+};
+
 export const runInteractiveMode = async (): Promise<void> => {
   p.intro("cdx - OpenAI Account Switcher");
 
@@ -210,6 +273,7 @@ export const runInteractiveMode = async (): Promise<void> => {
         { value: "switch", label: "Switch account" },
         { value: "add", label: "Add account (OAuth login)" },
         { value: "remove", label: "Remove account" },
+        { value: "label", label: "Label account" },
         { value: "exit", label: "Exit" },
       ],
     });
@@ -231,6 +295,9 @@ export const runInteractiveMode = async (): Promise<void> => {
         break;
       case "remove":
         await handleRemoveAccount();
+        break;
+      case "label":
+        await handleLabelAccount();
         break;
       case "exit":
         running = false;
