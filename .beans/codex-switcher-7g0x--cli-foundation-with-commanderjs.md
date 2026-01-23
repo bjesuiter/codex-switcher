@@ -1,11 +1,11 @@
 ---
 # codex-switcher-7g0x
 title: CLI Foundation with Commander.js
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-22T08:48:58Z
-updated_at: 2026-01-22T08:49:25Z
+updated_at: 2026-01-22T11:47:44Z
 parent: codex-switcher-a5mb
 blocking:
     - codex-switcher-zim6
@@ -20,8 +20,8 @@ Set up the CLI foundation using commander.js for argument parsing.
 - Ensure binary entry point works via package.json 'bin' field
 
 ## Checklist
-- [ ] Install dependencies: commander, @clack/prompts
-- [ ] Create basic commander.js program structure in cdx.ts
-- [ ] Configure default command to call interactive handler
-- [ ] Verify `bun run cdx.ts` works
-- [ ] Write tests using bun:test to validate CLI foundation behavior
+- [x] Install dependencies: commander, @clack/prompts
+- [x] Create basic commander.js program structure in cdx.ts
+- [x] Configure default command to call interactive handler
+- [x] Verify `bun run cdx.ts` works
+- [x] Write tests using bun:test to validate CLI foundation behavior

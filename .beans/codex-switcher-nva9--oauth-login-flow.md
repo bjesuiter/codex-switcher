@@ -1,11 +1,11 @@
 ---
 # codex-switcher-nva9
 title: OAuth Login Flow
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-01-22T08:49:08Z
-updated_at: 2026-01-22T08:49:26Z
+updated_at: 2026-01-22T12:15:16Z
 parent: codex-switcher-a5mb
 blocking:
     - codex-switcher-lj4d
@@ -19,10 +19,10 @@ Implement OAuth login to add new OpenAI accounts.
 - Each account should have a user-friendly label/identifier
 
 ## Checklist
-- [ ] Research OpenAI OAuth flow (endpoints, scopes, redirect handling)
-- [ ] Implement local HTTP server for OAuth callback
-- [ ] Implement OAuth authorization URL generation
-- [ ] Handle OAuth callback and token exchange
-- [ ] Store credentials in Keychain after successful login
-- [ ] Add `cdx login` command to commander.js
-- [ ] Write tests using bun:test to validate OAuth login flow behavior
+- [x] Research OpenAI OAuth flow (endpoints, scopes, redirect handling)
+- [x] Implement local HTTP server for OAuth callback
+- [x] Implement OAuth authorization URL generation
+- [x] Handle OAuth callback and token exchange
+- [x] Store credentials in Keychain after successful login
+- [x] Add `cdx login` command to commander.js
+- [x] Write tests using bun:test to validate OAuth login flow behavior
