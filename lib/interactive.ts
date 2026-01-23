@@ -12,8 +12,13 @@ import type { Config } from "./types";
 
 type MenuAction = "list" | "switch" | "add" | "remove" | "exit";
 
-const getAccountDisplay = (accountId: string, isCurrent: boolean): string => {
-  return isCurrent ? `${accountId} (current)` : accountId;
+const getAccountDisplay = (
+  accountId: string,
+  isCurrent: boolean,
+  label?: string,
+): string => {
+  const name = label ? `${label} (${accountId})` : accountId;
+  return isCurrent ? `${name} (current)` : name;
 };
 
 const handleListAccounts = async (): Promise<void> => {
@@ -28,10 +33,13 @@ const handleListAccounts = async (): Promise<void> => {
   p.log.info("Configured accounts:");
   for (const account of config.accounts) {
     const marker = account.accountId === currentAccountId ? "→ " : "  ";
+    const displayName = account.label
+      ? `${account.label} (${account.accountId})`
+      : account.accountId;
     const status = keychainPayloadExists(account.accountId)
       ? ""
       : " (missing credentials)";
-    p.log.message(`${marker}${account.accountId}${status}`);
+    p.log.message(`${marker}${displayName}${status}`);
   }
 };
 
@@ -60,6 +68,7 @@ export const handleSwitchAccount = async (): Promise<void> => {
     label: getAccountDisplay(
       account.accountId,
       account.accountId === currentAccountId,
+      account.label,
     ),
   }));
 
@@ -85,7 +94,8 @@ export const handleSwitchAccount = async (): Promise<void> => {
   config.current = selected as number;
   await saveConfig(config);
 
-  p.log.success(`Switched to account ${selectedAccount.accountId}`);
+  const displayName = selectedAccount.label ?? selectedAccount.accountId;
+  p.log.success(`Switched to account ${displayName}`);
 };
 
 const handleAddAccount = async (): Promise<void> => {
@@ -112,6 +122,7 @@ const handleRemoveAccount = async (): Promise<void> => {
     label: getAccountDisplay(
       account.accountId,
       account.accountId === currentAccountId,
+      account.label,
     ),
   }));
 
@@ -178,7 +189,8 @@ export const runInteractiveMode = async (): Promise<void> => {
         const config = await loadConfig();
         const current = config.accounts[config.current];
         if (current) {
-          currentInfo = ` (current: ${current.accountId})`;
+          const displayName = current.label ?? current.accountId;
+          currentInfo = ` (current: ${displayName})`;
         }
       } catch {
         // Config may be invalid

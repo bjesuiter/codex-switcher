@@ -15,7 +15,10 @@ const openBrowser = (url: string): void => {
   spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
 };
 
-const addAccountToConfig = async (accountId: string): Promise<void> => {
+const addAccountToConfig = async (
+  accountId: string,
+  label?: string,
+): Promise<void> => {
   let config: Config;
 
   if (configExists()) {
@@ -25,6 +28,7 @@ const addAccountToConfig = async (accountId: string): Promise<void> => {
       config.accounts.push({
         accountId,
         keychainService: getKeychainService(accountId),
+        ...(label ? { label } : {}),
       });
     }
   } else {
@@ -34,6 +38,7 @@ const addAccountToConfig = async (accountId: string): Promise<void> => {
         {
           accountId,
           keychainService: getKeychainService(accountId),
+          ...(label ? { label } : {}),
         },
       ],
     };
@@ -98,11 +103,23 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
   };
 
   saveKeychainPayload(accountId, payload);
-  await addAccountToConfig(accountId);
 
   spinner.stop("Login successful!");
 
-  p.log.success(`Account ${accountId} saved to Keychain and config.`);
+  const labelInput = await p.text({
+    message: "Enter a label for this account (or press Enter to skip):",
+    placeholder: "e.g. Work, Personal",
+  });
+
+  const label =
+    !p.isCancel(labelInput) && labelInput?.trim()
+      ? labelInput.trim()
+      : undefined;
+
+  await addAccountToConfig(accountId, label);
+
+  const displayName = label ?? accountId;
+  p.log.success(`Account "${displayName}" saved to Keychain and config.`);
   p.outro("You can now use 'cdx switch' to activate this account.");
 
   return { accountId };

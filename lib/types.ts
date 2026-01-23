@@ -1,6 +1,7 @@
 export type AccountRecord = {
   accountId: string;
   keychainService: string;
+  label?: string;
 };
 
 export type Config = {

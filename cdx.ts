@@ -27,27 +27,31 @@ export const switchNext = async () => {
   config.current = nextIndex;
   await saveConfig(config);
 
-  const message = `Switched to account ${payload.accountId}`;
-  process.stdout.write(`${message}\n`);
+  const displayName = nextAccount.label ?? payload.accountId;
+  process.stdout.write(`Switched to account ${displayName}\n`);
 };
 
-export const switchToAccount = async (accountId: string) => {
+export const switchToAccount = async (identifier: string) => {
   const config = await loadConfig();
-  const index = config.accounts.findIndex((a) => a.accountId === accountId);
+  const index = config.accounts.findIndex(
+    (a) => a.accountId === identifier || a.label === identifier,
+  );
 
   if (index === -1) {
     throw new Error(
-      `Account "${accountId}" not found. Use 'cdx login' to add it.`,
+      `Account "${identifier}" not found. Use 'cdx login' to add it.`,
     );
   }
 
-  const payload = loadKeychainPayload(accountId);
+  const account = config.accounts[index];
+  const payload = loadKeychainPayload(account.accountId);
   await writeAuthFile(payload);
 
   config.current = index;
   await saveConfig(config);
 
-  process.stdout.write(`Switched to account ${accountId}\n`);
+  const displayName = account.label ?? account.accountId;
+  process.stdout.write(`Switched to account ${displayName}\n`);
 };
 
 export const interactiveMode = runInteractiveMode;
