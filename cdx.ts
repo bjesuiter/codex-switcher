@@ -33,13 +33,17 @@ export const switchAccount = async () => {
 
 export const interactiveMode = runInteractiveMode;
 
-export const createProgram = (deps: { performLogin?: typeof performLogin } = {}) => {
+export const createProgram = (
+  deps: { performLogin?: typeof performLogin } = {},
+) => {
   const program = new Command();
   const runLogin = deps.performLogin ?? performLogin;
 
   program
     .name("cdx")
-    .description("OpenCode account switcher - manage multiple OpenAI Pro subscriptions")
+    .description(
+      "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
+    )
     .version("0.1.0");
 
   program

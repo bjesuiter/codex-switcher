@@ -17,13 +17,15 @@ describe("cdx CLI", () => {
       const program = createProgram();
       const switchCmd = program.commands.find((cmd) => cmd.name() === "switch");
       expect(switchCmd).toBeDefined();
-      expect(switchCmd?.description()).toBe("Switch to the next configured OpenAI account");
+      expect(switchCmd?.description()).toBe(
+        "Switch to the next configured OpenAI account",
+      );
     });
 
     it("has description set", () => {
       const program = createProgram();
       expect(program.description()).toBe(
-        "OpenCode account switcher - manage multiple OpenAI Pro subscriptions",
+        "Manage multiple OpenAI Pro subscriptions in OpenCode",
       );
     });
   });
@@ -86,7 +88,7 @@ describe("cdx CLI", () => {
       });
 
       const output = result.stdout.toString();
-      expect(output).toContain("cdx - OpenCode Account Switcher");
+      expect(output).toContain("cdx - OpenAI Account Switcher");
     });
 
     it("fails gracefully with unknown command", async () => {

@@ -28,7 +28,9 @@ const handleListAccounts = async (): Promise<void> => {
   p.log.info("Configured accounts:");
   for (const account of config.accounts) {
     const marker = account.accountId === currentAccountId ? "→ " : "  ";
-    const status = keychainPayloadExists(account.accountId) ? "" : " (missing credentials)";
+    const status = keychainPayloadExists(account.accountId)
+      ? ""
+      : " (missing credentials)";
     p.log.message(`${marker}${account.accountId}${status}`);
   }
 };
@@ -55,7 +57,10 @@ const handleSwitchAccount = async (): Promise<void> => {
 
   const options = config.accounts.map((account, index) => ({
     value: index,
-    label: getAccountDisplay(account.accountId, account.accountId === currentAccountId),
+    label: getAccountDisplay(
+      account.accountId,
+      account.accountId === currentAccountId,
+    ),
   }));
 
   const selected = await p.select({
@@ -104,7 +109,10 @@ const handleRemoveAccount = async (): Promise<void> => {
 
   const options = config.accounts.map((account) => ({
     value: account.accountId,
-    label: getAccountDisplay(account.accountId, account.accountId === currentAccountId),
+    label: getAccountDisplay(
+      account.accountId,
+      account.accountId === currentAccountId,
+    ),
   }));
 
   const selected = await p.select({
@@ -145,7 +153,9 @@ const handleRemoveAccount = async (): Promise<void> => {
     config.current = 0;
   } else {
     // Preserve the previously active account by finding its new index
-    const newIndex = config.accounts.findIndex((a) => a.accountId === previousAccountId);
+    const newIndex = config.accounts.findIndex(
+      (a) => a.accountId === previousAccountId,
+    );
     config.current = newIndex >= 0 ? newIndex : 0;
   }
 
@@ -155,7 +165,7 @@ const handleRemoveAccount = async (): Promise<void> => {
 };
 
 export const runInteractiveMode = async (): Promise<void> => {
-  p.intro("cdx - OpenCode Account Switcher");
+  p.intro("cdx - OpenAI Account Switcher");
 
   let running = true;
 
@@ -175,10 +185,16 @@ export const runInteractiveMode = async (): Promise<void> => {
       }
     }
 
-    const action = await p.select<{ value: MenuAction; label: string }[], MenuAction>({
+    const action = await p.select<
+      { value: MenuAction; label: string }[],
+      MenuAction
+    >({
       message: `What would you like to do?${currentInfo}`,
       options: [
-        { value: "list", label: `List accounts (${keychainAccounts.length} in Keychain)` },
+        {
+          value: "list",
+          label: `List accounts (${keychainAccounts.length} in Keychain)`,
+        },
         { value: "switch", label: "Switch account" },
         { value: "add", label: "Add account (OAuth login)" },
         { value: "remove", label: "Remove account" },
