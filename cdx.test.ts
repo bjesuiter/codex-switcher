@@ -18,7 +18,7 @@ describe("cdx CLI", () => {
       const switchCmd = program.commands.find((cmd) => cmd.name() === "switch");
       expect(switchCmd).toBeDefined();
       expect(switchCmd?.description()).toBe(
-        "Switch to the next configured OpenAI account",
+        "Switch OpenAI account (interactive picker, by name, or --next)",
       );
     });
 

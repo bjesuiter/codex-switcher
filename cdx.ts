@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { writeAuthFile } from "./lib/auth";
 import { loadConfig, saveConfig } from "./lib/config";
 import { loadKeychainPayload } from "./lib/keychain";
-import { runInteractiveMode } from "./lib/interactive";
+import { handleSwitchAccount, runInteractiveMode } from "./lib/interactive";
 import { performLogin } from "./lib/oauth/login";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
@@ -12,7 +12,7 @@ export { writeAuthFile } from "./lib/auth";
 export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
 export { runInteractiveMode } from "./lib/interactive";
 
-export const switchAccount = async () => {
+export const switchNext = async () => {
   const config = await loadConfig();
   const nextIndex = (config.current + 1) % config.accounts.length;
   const nextAccount = config.accounts[nextIndex];
@@ -29,6 +29,25 @@ export const switchAccount = async () => {
 
   const message = `Switched to account ${payload.accountId}`;
   process.stdout.write(`${message}\n`);
+};
+
+export const switchToAccount = async (accountId: string) => {
+  const config = await loadConfig();
+  const index = config.accounts.findIndex((a) => a.accountId === accountId);
+
+  if (index === -1) {
+    throw new Error(
+      `Account "${accountId}" not found. Use 'cdx login' to add it.`,
+    );
+  }
+
+  const payload = loadKeychainPayload(accountId);
+  await writeAuthFile(payload);
+
+  config.current = index;
+  await saveConfig(config);
+
+  process.stdout.write(`Switched to account ${accountId}\n`);
 };
 
 export const interactiveMode = runInteractiveMode;
@@ -65,10 +84,18 @@ export const createProgram = (
 
   program
     .command("switch")
-    .description("Switch to the next configured OpenAI account")
-    .action(async () => {
+    .description("Switch OpenAI account (interactive picker, by name, or --next)")
+    .argument("[account-id]", "Account ID to switch to directly")
+    .option("-n, --next", "Cycle to the next configured account")
+    .action(async (accountId: string | undefined, options: { next?: boolean }) => {
       try {
-        await switchAccount();
+        if (options.next) {
+          await switchNext();
+        } else if (accountId) {
+          await switchToAccount(accountId);
+        } else {
+          await handleSwitchAccount();
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         process.stderr.write(`${message}\n`);

@@ -35,7 +35,7 @@ const handleListAccounts = async (): Promise<void> => {
   }
 };
 
-const handleSwitchAccount = async (): Promise<void> => {
+export const handleSwitchAccount = async (): Promise<void> => {
   if (!configExists()) {
     p.log.warning("No accounts configured. Use 'Add account' first.");
     return;
