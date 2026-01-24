@@ -38,18 +38,22 @@ export const writeCodexAuthFile = async (payload: OAuthPayload): Promise<void> =
   const codexAuthDir = path.dirname(codexAuthPath);
   await mkdir(codexAuthDir, { recursive: true });
 
-  const codexAuthJson = {
-    OPENAI_API_KEY: null,
-    tokens: {
-      id_token: payload.idToken ?? null,
-      access_token: payload.access,
-      refresh_token: payload.refresh,
-      account_id: payload.accountId,
-    },
-    last_refresh: new Date().toISOString(),
-  };
+  const existing = await readExistingJson(codexAuthPath);
 
-  await writeFile(codexAuthPath, JSON.stringify(codexAuthJson, null, 2), "utf8");
+  const existingTokens = typeof existing.tokens === "object" && existing.tokens !== null
+    ? (existing.tokens as Record<string, unknown>)
+    : {};
+
+  existing.tokens = {
+    ...existingTokens,
+    id_token: payload.idToken ?? null,
+    access_token: payload.access,
+    refresh_token: payload.refresh,
+    account_id: payload.accountId,
+  };
+  existing.last_refresh = new Date().toISOString();
+
+  await writeFile(codexAuthPath, JSON.stringify(existing, null, 2), "utf8");
 };
 
 export type WriteAuthResult = {

@@ -114,7 +114,6 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       const content = await readFile(codexAuthPath, "utf8");
       const parsed = JSON.parse(content);
 
-      expect(parsed.OPENAI_API_KEY).toBeNull();
       expect(parsed.tokens.id_token).toBe("id-token-1");
       expect(parsed.tokens.access_token).toBe(TEST_PAYLOAD_1.access);
       expect(parsed.tokens.refresh_token).toBe(TEST_PAYLOAD_1.refresh);
@@ -130,6 +129,32 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       const parsed = JSON.parse(content);
 
       expect(parsed.tokens.id_token).toBeNull();
+    });
+
+    it("preserves existing fields in codex auth.json", async () => {
+      const { codexAuthPath } = getPaths();
+      const codexAuthDir = path.dirname(codexAuthPath);
+      mkdirSync(codexAuthDir, { recursive: true });
+
+      const existing = {
+        OPENAI_API_KEY: "sk-existing-key",
+        tokens: { custom_field: "keep-me" },
+        some_other_setting: true,
+      };
+      await writeFile(codexAuthPath, JSON.stringify(existing, null, 2), "utf8");
+
+      await writeCodexAuthFile(TEST_PAYLOAD_1);
+
+      const content = await readFile(codexAuthPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed.OPENAI_API_KEY).toBe("sk-existing-key");
+      expect(parsed.some_other_setting).toBe(true);
+      expect(parsed.tokens.custom_field).toBe("keep-me");
+      expect(parsed.tokens.access_token).toBe(TEST_PAYLOAD_1.access);
+      expect(parsed.tokens.refresh_token).toBe(TEST_PAYLOAD_1.refresh);
+      expect(parsed.tokens.account_id).toBe(TEST_PAYLOAD_1.accountId);
+      expect(parsed.tokens.id_token).toBe("id-token-1");
     });
   });
 
