@@ -6,10 +6,11 @@ import { loadConfig, saveConfig } from "./lib/config";
 import { loadKeychainPayload } from "./lib/keychain";
 import {
   handleLabelAccount,
+  handleRefreshAccount,
   handleSwitchAccount,
   runInteractiveMode,
 } from "./lib/interactive";
-import { performLogin } from "./lib/oauth/login";
+import { performLogin, performRefresh } from "./lib/oauth/login";
 import { getStatus } from "./lib/status";
 import { fetchUsage, formatUsage, formatUsageCompact, formatUsageOverview, type AccountUsageEntry } from "./lib/usage";
 
@@ -97,6 +98,37 @@ export const createProgram = (
         if (!result) {
           process.stderr.write("Login failed.\n");
           process.exit(1);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("refresh")
+    .description("Re-authenticate an existing account (update tokens without creating a duplicate)")
+    .argument("[account]", "Account ID or label to refresh")
+    .action(async (account: string | undefined) => {
+      try {
+        if (account) {
+          const config = await loadConfig();
+          const target = config.accounts.find(
+            (a) => a.accountId === account || a.label === account,
+          );
+          if (!target) {
+            throw new Error(
+              `Account "${account}" not found. Use 'cdx login' to add it.`,
+            );
+          }
+          const result = await performRefresh(target.accountId, target.label);
+          if (!result) {
+            process.stderr.write("Refresh failed.\n");
+            process.exit(1);
+          }
+        } else {
+          await handleRefreshAccount();
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

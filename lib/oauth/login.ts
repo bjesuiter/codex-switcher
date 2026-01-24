@@ -47,6 +47,89 @@ const addAccountToConfig = async (
   await saveConfig(config);
 };
 
+export const performRefresh = async (
+  targetAccountId: string,
+  label?: string,
+): Promise<{ accountId: string } | null> => {
+  const displayName = label ?? targetAccountId;
+  p.log.step(`Refreshing credentials for "${displayName}"...`);
+
+  let flow;
+  try {
+    flow = await createAuthorizationFlow();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    p.log.error(`Failed to create authorization flow: ${msg}`);
+    return null;
+  }
+
+  const server = await startOAuthServer(flow.state);
+
+  if (!server.ready) {
+    p.log.error("Failed to start local server on port 1455.");
+    p.log.info("Please ensure the port is not in use.");
+    return null;
+  }
+
+  const spinner = p.spinner();
+
+  p.log.info("Opening browser for authentication...");
+  openBrowser(flow.url);
+
+  spinner.start("Waiting for authentication...");
+
+  const result = await server.waitForCode();
+  server.close();
+
+  if (!result) {
+    spinner.stop("Authentication timed out or failed.");
+    return null;
+  }
+
+  spinner.message("Exchanging authorization code...");
+
+  const tokenResult = await exchangeAuthorizationCode(
+    result.code,
+    flow.pkce.verifier,
+  );
+
+  if (tokenResult.type === "failed") {
+    spinner.stop("Failed to exchange authorization code.");
+    return null;
+  }
+
+  const newAccountId = extractAccountId(tokenResult.access);
+
+  if (!newAccountId) {
+    spinner.stop("Failed to extract account ID from token.");
+    return null;
+  }
+
+  if (newAccountId !== targetAccountId) {
+    spinner.stop(
+      `Account mismatch: expected "${targetAccountId}" but got "${newAccountId}". Make sure you log in with the correct OpenAI account.`,
+    );
+    return null;
+  }
+
+  spinner.message("Updating credentials...");
+
+  const payload: OAuthPayload = {
+    refresh: tokenResult.refresh,
+    access: tokenResult.access,
+    expires: tokenResult.expires,
+    accountId: newAccountId,
+    ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
+  };
+
+  saveKeychainPayload(newAccountId, payload);
+
+  spinner.stop("Credentials refreshed!");
+  p.log.success(`Account "${displayName}" credentials updated in Keychain.`);
+
+  return { accountId: newAccountId };
+};
+
 export const performLogin = async (): Promise<{ accountId: string } | null> => {
   p.intro("cdx login - Add OpenAI account");
 

@@ -7,11 +7,11 @@ import {
   listKeychainAccounts,
   loadKeychainPayload,
 } from "./keychain";
-import { performLogin } from "./oauth/login";
+import { performLogin, performRefresh } from "./oauth/login";
 import { getStatus } from "./status";
 import type { Config } from "./types";
 
-type MenuAction = "list" | "switch" | "add" | "remove" | "label" | "status" | "exit";
+type MenuAction = "list" | "switch" | "add" | "refresh" | "remove" | "label" | "status" | "exit";
 
 const getAccountDisplay = (
   accountId: string,
@@ -116,6 +116,54 @@ export const handleSwitchAccount = async (): Promise<void> => {
 
 const handleAddAccount = async (): Promise<void> => {
   await performLogin();
+};
+
+export const handleRefreshAccount = async (): Promise<void> => {
+  if (!configExists()) {
+    p.log.warning("No accounts configured. Use 'Add account' first.");
+    return;
+  }
+
+  const config = await loadConfig();
+
+  if (config.accounts.length === 0) {
+    p.log.warning("No accounts to refresh.");
+    return;
+  }
+
+  const currentAccountId = config.accounts[config.current]?.accountId;
+
+  const options = config.accounts.map((account) => ({
+    value: account.accountId,
+    label: getAccountDisplay(
+      account.accountId,
+      account.accountId === currentAccountId,
+      account.label,
+    ),
+  }));
+
+  const selected = await p.select({
+    message: "Select account to refresh:",
+    options,
+  });
+
+  if (p.isCancel(selected)) {
+    p.log.info("Cancelled.");
+    return;
+  }
+
+  const accountId = selected as string;
+  const account = config.accounts.find((a) => a.accountId === accountId);
+
+  try {
+    const result = await performRefresh(accountId, account?.label);
+    if (!result) {
+      p.log.warning("Refresh was not completed.");
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    p.log.error(`Refresh failed: ${msg}`);
+  }
 };
 
 const handleRemoveAccount = async (): Promise<void> => {
@@ -319,6 +367,7 @@ export const runInteractiveMode = async (): Promise<void> => {
         },
         { value: "switch", label: "Switch account" },
         { value: "add", label: "Add account (OAuth login)" },
+        { value: "refresh", label: "Refresh account (re-login)" },
         { value: "remove", label: "Remove account" },
         { value: "label", label: "Label account" },
         { value: "status", label: "Account status & token expiry" },
@@ -340,6 +389,9 @@ export const runInteractiveMode = async (): Promise<void> => {
         break;
       case "add":
         await handleAddAccount();
+        break;
+      case "refresh":
+        await handleRefreshAccount();
         break;
       case "remove":
         await handleRemoveAccount();
