@@ -1,10 +1,11 @@
 ---
 # codex-switcher-w8mk
 title: Refine status command output with card-style layout
-status: todo
+status: completed
 type: feature
+priority: normal
 created_at: 2026-01-24T13:35:31Z
-updated_at: 2026-01-24T13:35:31Z
+updated_at: 2026-01-24T13:39:49Z
 ---
 
 Redesign the `cdx status` output to use a slimmer, card-style layout per account.

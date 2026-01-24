@@ -170,24 +170,31 @@ export const createProgram = (
           return;
         }
 
-        process.stdout.write("\nAccounts:\n");
-        for (const account of status.accounts) {
+        process.stdout.write("\n");
+        for (let i = 0; i < status.accounts.length; i++) {
+          const account = status.accounts[i];
           const marker = account.isCurrent ? "→ " : "  ";
-          const name = account.label
-            ? `${account.label} (${account.accountId})`
-            : account.accountId;
-          const keychain = account.keychainExists ? "" : " [no keychain]";
-          const idToken = account.hasIdToken ? "" : " [no id_token]";
-          process.stdout.write(
-            `${marker}${name} — ${account.expiresIn}${keychain}${idToken}\n`,
-          );
-        }
+          const warnings: string[] = [];
+          if (!account.keychainExists) warnings.push("[no keychain]");
+          if (!account.hasIdToken) warnings.push("[no id_token]");
+          const warnStr = warnings.length > 0 ? `  ${warnings.join(" ")}` : "";
 
-        const currentAccount = status.accounts.find((a) => a.isCurrent);
-        if (currentAccount) {
-          const usageResult = await fetchUsage(currentAccount.accountId);
+          const displayName = account.label ?? account.accountId;
+          process.stdout.write(`${marker}${displayName}${warnStr}\n`);
+
+          if (account.label) {
+            process.stdout.write(`    ${account.accountId}\n`);
+          }
+
+          process.stdout.write(`    ${account.expiresIn}\n`);
+
+          const usageResult = await fetchUsage(account.accountId);
           if (usageResult.ok) {
-            process.stdout.write(`\nUsage: ${formatUsageCompact(usageResult.data)}\n`);
+            process.stdout.write(`    ${formatUsageCompact(usageResult.data)}\n`);
+          }
+
+          if (i < status.accounts.length - 1) {
+            process.stdout.write("\n");
           }
         }
 
