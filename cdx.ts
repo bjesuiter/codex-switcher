@@ -12,7 +12,7 @@ import {
 } from "./lib/interactive";
 import { performLogin, performRefresh } from "./lib/oauth/login";
 import { getStatus } from "./lib/status";
-import { fetchUsage, formatUsage, formatUsageCompact, formatUsageOverview, type AccountUsageEntry } from "./lib/usage";
+import { fetchUsage, formatUsage, formatUsageBars, formatUsageCompact, formatUsageOverview, type AccountUsageEntry } from "./lib/usage";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
@@ -218,7 +218,10 @@ export const createProgram = (
 
           const usageResult = await fetchUsage(account.accountId);
           if (usageResult.ok) {
-            process.stdout.write(`    ${formatUsageCompact(usageResult.data)}\n`);
+            const bars = formatUsageBars(usageResult.data);
+            for (const bar of bars) {
+              process.stdout.write(`${bar}\n`);
+            }
           }
 
           if (i < status.accounts.length - 1) {

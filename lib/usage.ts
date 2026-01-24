@@ -208,6 +208,22 @@ export const formatUsageCompact = (usage: UsageResponse): string => {
   return plan;
 };
 
+export const formatUsageBars = (usage: UsageResponse, indent = "    "): string[] => {
+  const windows: { label: string; window: WindowSnapshot }[] = [];
+  if (usage.rate_limit?.primary_window) {
+    windows.push({ label: formatWindowLabel(usage.rate_limit.primary_window.limit_window_seconds), window: usage.rate_limit.primary_window });
+  }
+  if (usage.rate_limit?.secondary_window) {
+    windows.push({ label: formatWindowLabel(usage.rate_limit.secondary_window.limit_window_seconds), window: usage.rate_limit.secondary_window });
+  }
+
+  const maxLabelLen = Math.max(...windows.map((w) => w.label.length), 0);
+  return windows.map(({ label, window: w }) => {
+    const paddedLabel = label.padEnd(maxLabelLen);
+    return `${indent}${paddedLabel}  ${formatPercentageBar(w.used_percent)}  resets in ${formatResetCountdown(w.reset_at)}`;
+  });
+};
+
 export type AccountUsageEntry = {
   displayName: string;
   isCurrent: boolean;
@@ -225,20 +241,7 @@ export const formatUsageOverview = (entries: AccountUsageEntry[]): string => {
       const usage = entry.result.data;
       const plan = usage.plan_type ?? "unknown";
       lines.push(`${marker}${entry.displayName} (${plan})`);
-
-      const windows: { label: string; window: WindowSnapshot }[] = [];
-      if (usage.rate_limit?.primary_window) {
-        windows.push({ label: formatWindowLabel(usage.rate_limit.primary_window.limit_window_seconds), window: usage.rate_limit.primary_window });
-      }
-      if (usage.rate_limit?.secondary_window) {
-        windows.push({ label: formatWindowLabel(usage.rate_limit.secondary_window.limit_window_seconds), window: usage.rate_limit.secondary_window });
-      }
-
-      const maxLabelLen = Math.max(...windows.map((w) => w.label.length), 0);
-      for (const { label, window: w } of windows) {
-        const paddedLabel = label.padEnd(maxLabelLen);
-        lines.push(`    ${paddedLabel}  ${formatPercentageBar(w.used_percent)}  resets in ${formatResetCountdown(w.reset_at)}`);
-      }
+      lines.push(...formatUsageBars(usage));
     } else {
       lines.push(`${marker}${entry.displayName}: [error] ${entry.result.error.message}`);
     }
