@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.3
+
+### Fixes
+
+- Fix CI: skip keychain-dependent tests when `CI=true`
+- Fix CI: guard `main()` with `import.meta.main` to prevent execution during test imports
+- Bundle CLI with tsdown, publish from `dist/` with separate package.json
+
 ## 1.0.0
 
 Initial release.
