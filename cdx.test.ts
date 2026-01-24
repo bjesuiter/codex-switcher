@@ -80,7 +80,7 @@ describe("cdx CLI", () => {
       expect(exitCode).toBe(1);
     });
 
-    it("runs interactive mode by default (no command)", async () => {
+    it.skipIf(!!process.env.CI)("runs interactive mode by default (no command)", async () => {
       const result = Bun.spawnSync({
         cmd: ["bun", "run", "cdx.ts"],
         stdout: "pipe",

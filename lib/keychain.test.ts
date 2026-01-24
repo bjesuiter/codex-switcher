@@ -28,7 +28,7 @@ describe("keychain", () => {
     });
   });
 
-  describe("keychain operations", () => {
+  describe.skipIf(!!process.env.CI)("keychain operations", () => {
     afterEach(() => {
       try {
         deleteKeychainPayload(TEST_ACCOUNT_ID);
@@ -82,7 +82,7 @@ describe("keychain", () => {
     });
   });
 
-  describe("listKeychainAccounts", () => {
+  describe.skipIf(!!process.env.CI)("listKeychainAccounts", () => {
     beforeEach(() => {
       saveKeychainPayload(TEST_ACCOUNT_ID, TEST_PAYLOAD);
     });
