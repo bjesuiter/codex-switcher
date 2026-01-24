@@ -72,7 +72,7 @@ export const createProgram = (
     .description(
       "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
     )
-    .version(projectVersion);
+    .version(projectVersion, "-v, --version");
 
   program
     .command("login")
@@ -142,6 +142,13 @@ export const createProgram = (
         process.stderr.write(`${message}\n`);
         process.exit(1);
       }
+    });
+
+  program
+    .command("version")
+    .description("Show CLI version")
+    .action(() => {
+      process.stdout.write(`${projectVersion}\n`);
     });
 
   program.action(async () => {
