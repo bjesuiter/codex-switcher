@@ -169,8 +169,10 @@ describe("formatUsageOverview", () => {
     ];
 
     const output = formatUsageOverview(entries);
-    expect(output).toContain("→ work (acc-1): plus — 65% used (5h window)");
-    expect(output).toContain("  personal (acc-2): pro — 20% used (5h window)");
+    expect(output).toContain("→ work (acc-1) (plus)");
+    expect(output).toContain("    5h  [█████████████░░░░░░░] 65% used");
+    expect(output).toContain("  personal (acc-2) (pro)");
+    expect(output).toContain("    5h  [████░░░░░░░░░░░░░░░░] 20% used");
   });
 
   it("shows error inline for failed accounts", () => {
@@ -191,7 +193,7 @@ describe("formatUsageOverview", () => {
     ];
 
     const output = formatUsageOverview(entries);
-    expect(output).toContain("→ acc-1: plus");
+    expect(output).toContain("→ acc-1 (plus)");
     expect(output).toContain("  acc-2: [error] Token expired");
   });
 
@@ -205,7 +207,7 @@ describe("formatUsageOverview", () => {
     ];
 
     const output = formatUsageOverview(entries);
-    expect(output).toBe("→ only (acc-1): pro");
+    expect(output).toBe("→ only (acc-1) (pro)");
   });
 });
 

@@ -217,12 +217,34 @@ export type AccountUsageEntry = {
 export const formatUsageOverview = (entries: AccountUsageEntry[]): string => {
   const lines: string[] = [];
 
-  for (const entry of entries) {
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
     const marker = entry.isCurrent ? "→ " : "  ";
+
     if (entry.result.ok) {
-      lines.push(`${marker}${entry.displayName}: ${formatUsageCompact(entry.result.data)}`);
+      const usage = entry.result.data;
+      const plan = usage.plan_type ?? "unknown";
+      lines.push(`${marker}${entry.displayName} (${plan})`);
+
+      const windows: { label: string; window: WindowSnapshot }[] = [];
+      if (usage.rate_limit?.primary_window) {
+        windows.push({ label: formatWindowLabel(usage.rate_limit.primary_window.limit_window_seconds), window: usage.rate_limit.primary_window });
+      }
+      if (usage.rate_limit?.secondary_window) {
+        windows.push({ label: formatWindowLabel(usage.rate_limit.secondary_window.limit_window_seconds), window: usage.rate_limit.secondary_window });
+      }
+
+      const maxLabelLen = Math.max(...windows.map((w) => w.label.length), 0);
+      for (const { label, window: w } of windows) {
+        const paddedLabel = label.padEnd(maxLabelLen);
+        lines.push(`    ${paddedLabel}  ${formatPercentageBar(w.used_percent)}  resets in ${formatResetCountdown(w.reset_at)}`);
+      }
     } else {
       lines.push(`${marker}${entry.displayName}: [error] ${entry.result.error.message}`);
+    }
+
+    if (i < entries.length - 1) {
+      lines.push("");
     }
   }
 
