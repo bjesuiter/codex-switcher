@@ -1,11 +1,11 @@
 ---
 # codex-switcher-2fv8
 title: Implement cdx usage command and enhance cdx status with OpenAI usage data
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-01-24T12:58:36Z
-updated_at: 2026-01-24T12:58:36Z
+updated_at: 2026-01-24T13:10:00Z
 ---
 
 ## Summary
