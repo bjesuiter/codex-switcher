@@ -106,7 +106,11 @@ export const handleSwitchAccount = async (): Promise<void> => {
 
   const displayName = selectedAccount.label ?? selectedAccount.accountId;
   const opencodeMark = "✓";
-  const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
+  const codexMark = result.codexWritten
+    ? "✓"
+    : result.codexCleared
+      ? "⚠ missing id_token (cleared)"
+      : "⚠ missing id_token";
   p.log.success(`Switched to account ${displayName}`);
   p.log.message(`  OpenCode:  ${opencodeMark}`);
   p.log.message(`  Codex CLI: ${codexMark}`);

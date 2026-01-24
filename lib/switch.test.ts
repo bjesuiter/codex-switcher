@@ -169,14 +169,20 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       expect(result.codexMissingIdToken).toBe(false);
     });
 
-    it("skips codex auth and warns when idToken is missing", async () => {
+    it("clears codex auth when idToken is missing", async () => {
+      const { codexAuthPath } = getPaths();
+      await mkdirSync(path.dirname(codexAuthPath), { recursive: true });
+      await writeFile(codexAuthPath, JSON.stringify({ tokens: { account_id: "stale" } }, null, 2), "utf8");
+      expect(existsSync(codexAuthPath)).toBe(true);
+
       const result = await writeAllAuthFiles(TEST_PAYLOAD_2);
 
-      const { authPath, codexAuthPath } = getPaths();
+      const { authPath } = getPaths();
       expect(existsSync(authPath)).toBe(true);
       expect(existsSync(codexAuthPath)).toBe(false);
       expect(result.codexWritten).toBe(false);
       expect(result.codexMissingIdToken).toBe(true);
+      expect(result.codexCleared).toBe(true);
     });
   });
 

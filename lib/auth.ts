@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getPaths } from "./paths";
 import type { OAuthPayload } from "./types";
@@ -59,6 +59,7 @@ export const writeCodexAuthFile = async (payload: OAuthPayload): Promise<void> =
 export type WriteAuthResult = {
   codexWritten: boolean;
   codexMissingIdToken: boolean;
+  codexCleared: boolean;
 };
 
 export const writeAllAuthFiles = async (payload: OAuthPayload): Promise<WriteAuthResult> => {
@@ -66,8 +67,19 @@ export const writeAllAuthFiles = async (payload: OAuthPayload): Promise<WriteAut
 
   if (payload.idToken) {
     await writeCodexAuthFile(payload);
-    return { codexWritten: true, codexMissingIdToken: false };
+    return { codexWritten: true, codexMissingIdToken: false, codexCleared: false };
   }
 
-  return { codexWritten: false, codexMissingIdToken: true };
+  const { codexAuthPath } = getPaths();
+  let codexCleared = false;
+  if (existsSync(codexAuthPath)) {
+    try {
+      await rm(codexAuthPath);
+      codexCleared = true;
+    } catch {
+      codexCleared = false;
+    }
+  }
+
+  return { codexWritten: false, codexMissingIdToken: true, codexCleared };
 };
