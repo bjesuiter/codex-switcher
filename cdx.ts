@@ -11,7 +11,7 @@ import {
 } from "./lib/interactive";
 import { performLogin } from "./lib/oauth/login";
 import { getStatus } from "./lib/status";
-import { fetchUsage, formatUsage, formatUsageCompact } from "./lib/usage";
+import { fetchUsage, formatUsage, formatUsageCompact, formatUsageOverview, type AccountUsageEntry } from "./lib/usage";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
@@ -212,13 +212,12 @@ export const createProgram = (
 
   program
     .command("usage")
-    .description("Show OpenAI usage for current account")
-    .argument("[account]", "Account ID or label (defaults to current)")
+    .description("Show OpenAI usage for all accounts (or detailed view for one)")
+    .argument("[account]", "Account ID or label (shows detailed single-account view)")
     .action(async (account: string | undefined) => {
       try {
         const config = await loadConfig();
 
-        let targetAccountId: string;
         if (account) {
           const found = config.accounts.find(
             (a) => a.accountId === account || a.label === account,
@@ -228,21 +227,43 @@ export const createProgram = (
               `Account "${account}" not found. Use 'cdx login' to add it.`,
             );
           }
-          targetAccountId = found.accountId;
-        } else {
-          const current = config.accounts[config.current];
-          if (!current) {
-            throw new Error("No current account. Use 'cdx login' to add one.");
+
+          const result = await fetchUsage(found.accountId);
+          if (!result.ok) {
+            throw new Error(result.error.message);
           }
-          targetAccountId = current.accountId;
-        }
 
-        const result = await fetchUsage(targetAccountId);
-        if (!result.ok) {
-          throw new Error(result.error.message);
-        }
+          const displayName = found.label
+            ? `${found.label} (${found.accountId})`
+            : found.accountId;
+          process.stdout.write(`\n${displayName}\n${formatUsage(result.data)}\n\n`);
+        } else {
+          if (config.accounts.length === 0) {
+            throw new Error("No accounts configured. Use 'cdx login' to add one.");
+          }
 
-        process.stdout.write(`\n${formatUsage(result.data)}\n\n`);
+          const results = await Promise.allSettled(
+            config.accounts.map((a) => fetchUsage(a.accountId)),
+          );
+
+          const entries: AccountUsageEntry[] = config.accounts.map((a, i) => {
+            const settled = results[i];
+            const displayName = a.label
+              ? `${a.label} (${a.accountId})`
+              : a.accountId;
+            const result: AccountUsageEntry["result"] =
+              settled.status === "fulfilled"
+                ? settled.value
+                : { ok: false, error: { type: "network_error", message: settled.reason?.message ?? "Fetch failed" } };
+            return {
+              displayName,
+              isCurrent: i === config.current,
+              result,
+            };
+          });
+
+          process.stdout.write(`\n${formatUsageOverview(entries)}\n\n`);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         process.stderr.write(`${message}\n`);

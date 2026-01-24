@@ -207,3 +207,24 @@ export const formatUsageCompact = (usage: UsageResponse): string => {
   }
   return plan;
 };
+
+export type AccountUsageEntry = {
+  displayName: string;
+  isCurrent: boolean;
+  result: UsageResult;
+};
+
+export const formatUsageOverview = (entries: AccountUsageEntry[]): string => {
+  const lines: string[] = [];
+
+  for (const entry of entries) {
+    const marker = entry.isCurrent ? "→ " : "  ";
+    if (entry.result.ok) {
+      lines.push(`${marker}${entry.displayName}: ${formatUsageCompact(entry.result.data)}`);
+    } else {
+      lines.push(`${marker}${entry.displayName}: [error] ${entry.result.error.message}`);
+    }
+  }
+
+  return lines.join("\n");
+};

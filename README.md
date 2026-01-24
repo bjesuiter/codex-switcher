@@ -92,8 +92,8 @@ Running `cdx` without arguments opens an interactive menu to:
 | `cdx label` | Label an account (interactive) |
 | `cdx label <account> <label>` | Assign label directly |
 | `cdx status` | Show account status, token expiry, and usage |
-| `cdx usage` | Show OpenAI usage for current account |
-| `cdx usage <account>` | Show usage for a specific account |
+| `cdx usage` | Show usage overview for all accounts |
+| `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
 

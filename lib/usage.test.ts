@@ -2,8 +2,10 @@ import { describe, expect, it, afterEach } from "bun:test";
 import {
   formatUsage,
   formatUsageCompact,
+  formatUsageOverview,
   fetchUsageRaw,
   type UsageResponse,
+  type AccountUsageEntry,
 } from "./usage";
 
 describe("formatUsage", () => {
@@ -124,6 +126,86 @@ describe("formatUsageCompact", () => {
   it("shows ? when plan is missing", () => {
     const usage: UsageResponse = {};
     expect(formatUsageCompact(usage)).toBe("?");
+  });
+});
+
+describe("formatUsageOverview", () => {
+  it("shows current account with arrow marker", () => {
+    const entries: AccountUsageEntry[] = [
+      {
+        displayName: "work (acc-1)",
+        isCurrent: true,
+        result: {
+          ok: true,
+          data: {
+            plan_type: "plus",
+            rate_limit: {
+              primary_window: {
+                used_percent: 65,
+                reset_at: Math.floor(Date.now() / 1000) + 3600,
+                limit_window_seconds: 18000,
+              },
+            },
+          },
+        },
+      },
+      {
+        displayName: "personal (acc-2)",
+        isCurrent: false,
+        result: {
+          ok: true,
+          data: {
+            plan_type: "pro",
+            rate_limit: {
+              primary_window: {
+                used_percent: 20,
+                reset_at: Math.floor(Date.now() / 1000) + 7200,
+                limit_window_seconds: 18000,
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    const output = formatUsageOverview(entries);
+    expect(output).toContain("→ work (acc-1): plus — 65% used (5h window)");
+    expect(output).toContain("  personal (acc-2): pro — 20% used (5h window)");
+  });
+
+  it("shows error inline for failed accounts", () => {
+    const entries: AccountUsageEntry[] = [
+      {
+        displayName: "acc-1",
+        isCurrent: true,
+        result: { ok: true, data: { plan_type: "plus" } },
+      },
+      {
+        displayName: "acc-2",
+        isCurrent: false,
+        result: {
+          ok: false,
+          error: { type: "auth_failed", message: "Token expired" },
+        },
+      },
+    ];
+
+    const output = formatUsageOverview(entries);
+    expect(output).toContain("→ acc-1: plus");
+    expect(output).toContain("  acc-2: [error] Token expired");
+  });
+
+  it("handles single account", () => {
+    const entries: AccountUsageEntry[] = [
+      {
+        displayName: "only (acc-1)",
+        isCurrent: true,
+        result: { ok: true, data: { plan_type: "pro" } },
+      },
+    ];
+
+    const output = formatUsageOverview(entries);
+    expect(output).toBe("→ only (acc-1): pro");
   });
 });
 
