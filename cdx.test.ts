@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import projectVersion from "project-version";
 import { createProgram } from "./cdx";
 
 describe("cdx CLI", () => {
@@ -8,9 +9,9 @@ describe("cdx CLI", () => {
       expect(program.name()).toBe("cdx");
     });
 
-    it("creates a program with version 0.1.0", () => {
+    it("creates a program with version from package.json", () => {
       const program = createProgram();
-      expect(program.version()).toBe("0.1.0");
+      expect(program.version()).toBe(projectVersion);
     });
 
     it("has switch command registered", () => {
@@ -53,7 +54,7 @@ describe("cdx CLI", () => {
       });
 
       const output = result.stdout.toString().trim();
-      expect(output).toBe("0.1.0");
+      expect(output).toBe(projectVersion);
     });
 
     it("exits non-zero when login fails", async () => {
