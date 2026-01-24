@@ -38,9 +38,9 @@ export const switchNext = async () => {
   const displayName = nextAccount.label ?? payload.accountId;
   const opencodeMark = "✓";
   const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
-  process.stdout.write(
-    `Switched to account ${displayName} [OpenCode: ${opencodeMark}] [Codex CLI: ${codexMark}]\n`,
-  );
+  process.stdout.write(`Switched to account ${displayName}\n`);
+  process.stdout.write(`  OpenCode:  ${opencodeMark}\n`);
+  process.stdout.write(`  Codex CLI: ${codexMark}\n`);
 };
 
 export const switchToAccount = async (identifier: string) => {
@@ -65,9 +65,9 @@ export const switchToAccount = async (identifier: string) => {
   const displayName = account.label ?? account.accountId;
   const opencodeMark = "✓";
   const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
-  process.stdout.write(
-    `Switched to account ${displayName} [OpenCode: ${opencodeMark}] [Codex CLI: ${codexMark}]\n`,
-  );
+  process.stdout.write(`Switched to account ${displayName}\n`);
+  process.stdout.write(`  OpenCode:  ${opencodeMark}\n`);
+  process.stdout.write(`  Codex CLI: ${codexMark}\n`);
 };
 
 export const interactiveMode = runInteractiveMode;
