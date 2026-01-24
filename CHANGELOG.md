@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+### Fixes
+
+- Fix version output: inline version at build time instead of using `project-version` (which read from CWD's package.json)
+
 ## 1.0.3
 
 ### Fixes

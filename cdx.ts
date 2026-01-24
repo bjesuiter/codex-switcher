@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
-import projectVersion from "project-version";
+import pkg from "./package.json";
 import { writeAuthFile } from "./lib/auth";
 import { loadConfig, saveConfig } from "./lib/config";
 import { loadKeychainPayload } from "./lib/keychain";
@@ -72,7 +72,7 @@ export const createProgram = (
     .description(
       "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
     )
-    .version(projectVersion, "-v, --version");
+    .version(pkg.version, "-v, --version");
 
   program
     .command("login")
@@ -148,7 +148,7 @@ export const createProgram = (
     .command("version")
     .description("Show CLI version")
     .action(() => {
-      process.stdout.write(`${projectVersion}\n`);
+      process.stdout.write(`${pkg.version}\n`);
     });
 
   program.action(async () => {
