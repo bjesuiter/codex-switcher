@@ -11,6 +11,7 @@ import {
   runInteractiveMode,
 } from "./lib/interactive";
 import { performLogin, performRefresh } from "./lib/oauth/login";
+import { writeActiveAuthFilesIfCurrent } from "./lib/refresh";
 import { getStatus } from "./lib/status";
 import { fetchUsage, formatUsage, formatUsageBars, formatUsageCompact, formatUsageOverview, type AccountUsageEntry } from "./lib/usage";
 
@@ -130,6 +131,17 @@ export const createProgram = (
           if (!result) {
             process.stderr.write("Refresh failed.\n");
             process.exit(1);
+          }
+          const authResult = await writeActiveAuthFilesIfCurrent(result.accountId);
+          if (authResult) {
+            const codexMark = authResult.codexWritten
+              ? "✓"
+              : authResult.codexCleared
+                ? "⚠ missing id_token (cleared)"
+                : "⚠ missing id_token";
+            process.stdout.write("Updated active auth files:\n");
+            process.stdout.write("  OpenCode:  ✓\n");
+            process.stdout.write(`  Codex CLI: ${codexMark}\n`);
           }
         } else {
           await handleRefreshAccount();

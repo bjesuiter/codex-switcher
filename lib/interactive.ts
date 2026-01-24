@@ -8,6 +8,7 @@ import {
   loadKeychainPayload,
 } from "./keychain";
 import { performLogin, performRefresh } from "./oauth/login";
+import { writeActiveAuthFilesIfCurrent } from "./refresh";
 import { getStatus } from "./status";
 import type { Config } from "./types";
 
@@ -161,6 +162,18 @@ export const handleRefreshAccount = async (): Promise<void> => {
     const result = await performRefresh(accountId, account?.label);
     if (!result) {
       p.log.warning("Refresh was not completed.");
+    } else {
+      const authResult = await writeActiveAuthFilesIfCurrent(result.accountId);
+      if (authResult) {
+        const codexMark = authResult.codexWritten
+          ? "✓"
+          : authResult.codexCleared
+            ? "⚠ missing id_token (cleared)"
+            : "⚠ missing id_token";
+        p.log.message("Updated active auth files:");
+        p.log.message("  OpenCode:  ✓");
+        p.log.message(`  Codex CLI: ${codexMark}`);
+      }
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

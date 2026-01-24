@@ -7,6 +7,7 @@ import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile } from "./auth";
 import { loadConfig, saveConfig } from "./config";
 import { deleteKeychainPayload, saveKeychainPayload } from "./keychain";
 import { createTestPaths, getPaths, resetPaths, setPaths } from "./paths";
+import { writeActiveAuthFilesIfCurrent } from "./refresh";
 import type { Config, OAuthPayload } from "./types";
 
 const TEST_ACCOUNT_1 = "switch-test-account-1-" + Date.now();
@@ -183,6 +184,46 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       expect(result.codexWritten).toBe(false);
       expect(result.codexMissingIdToken).toBe(true);
       expect(result.codexCleared).toBe(true);
+    });
+  });
+
+  describe("writeActiveAuthFilesIfCurrent", () => {
+    it("updates auth files when refreshed account is current", async () => {
+      const config: Config = {
+        current: 0,
+        accounts: [
+          { accountId: TEST_ACCOUNT_1, keychainService: "cdx-openai-" + TEST_ACCOUNT_1 },
+          { accountId: TEST_ACCOUNT_2, keychainService: "cdx-openai-" + TEST_ACCOUNT_2 },
+        ],
+      };
+
+      await saveConfig(config);
+
+      const result = await writeActiveAuthFilesIfCurrent(TEST_ACCOUNT_1);
+
+      const { authPath, codexAuthPath } = getPaths();
+      expect(result?.codexWritten).toBe(true);
+      expect(existsSync(authPath)).toBe(true);
+      expect(existsSync(codexAuthPath)).toBe(true);
+    });
+
+    it("skips auth file updates when refreshed account is not current", async () => {
+      const config: Config = {
+        current: 0,
+        accounts: [
+          { accountId: TEST_ACCOUNT_1, keychainService: "cdx-openai-" + TEST_ACCOUNT_1 },
+          { accountId: TEST_ACCOUNT_2, keychainService: "cdx-openai-" + TEST_ACCOUNT_2 },
+        ],
+      };
+
+      await saveConfig(config);
+
+      const result = await writeActiveAuthFilesIfCurrent(TEST_ACCOUNT_2);
+
+      const { authPath, codexAuthPath } = getPaths();
+      expect(result).toBeNull();
+      expect(existsSync(authPath)).toBe(false);
+      expect(existsSync(codexAuthPath)).toBe(false);
     });
   });
 
