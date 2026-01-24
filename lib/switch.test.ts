@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile } from "./auth";
@@ -76,6 +76,29 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       expect(parsed.openai.refresh).toBe(TEST_PAYLOAD_1.refresh);
       expect(parsed.openai.access).toBe(TEST_PAYLOAD_1.access);
       expect(parsed.openai.expires).toBe(TEST_PAYLOAD_1.expires);
+      expect(parsed.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+
+    it("preserves non-openai sections in existing auth.json", async () => {
+      const { authPath } = getPaths();
+      const authDir = path.dirname(authPath);
+      mkdirSync(authDir, { recursive: true });
+
+      const existing = {
+        anthropic: { key: "sk-ant-xxx", model: "claude-4" },
+        custom: { foo: "bar" },
+      };
+      await writeFile(authPath, JSON.stringify(existing, null, 2), "utf8");
+
+      await writeAuthFile(TEST_PAYLOAD_1);
+
+      const content = await readFile(authPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed.anthropic.key).toBe("sk-ant-xxx");
+      expect(parsed.anthropic.model).toBe("claude-4");
+      expect(parsed.custom.foo).toBe("bar");
+      expect(parsed.openai.type).toBe("oauth");
       expect(parsed.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
     });
   });

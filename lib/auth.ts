@@ -1,24 +1,36 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getPaths } from "./paths";
 import type { OAuthPayload } from "./types";
+
+const readExistingJson = async (filePath: string): Promise<Record<string, unknown>> => {
+  if (!existsSync(filePath)) return {};
+  try {
+    const raw = await readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+};
 
 export const writeAuthFile = async (payload: OAuthPayload): Promise<void> => {
   const { authPath } = getPaths();
   const authDir = path.dirname(authPath);
   await mkdir(authDir, { recursive: true });
 
-  const authJson = {
-    openai: {
-      type: "oauth",
-      refresh: payload.refresh,
-      access: payload.access,
-      expires: payload.expires,
-      accountId: payload.accountId,
-    },
+  const existing = await readExistingJson(authPath);
+
+  existing.openai = {
+    type: "oauth",
+    refresh: payload.refresh,
+    access: payload.access,
+    expires: payload.expires,
+    accountId: payload.accountId,
   };
 
-  await writeFile(authPath, JSON.stringify(authJson, null, 2), "utf8");
+  await writeFile(authPath, JSON.stringify(existing, null, 2), "utf8");
 };
 
 export const writeCodexAuthFile = async (payload: OAuthPayload): Promise<void> => {
