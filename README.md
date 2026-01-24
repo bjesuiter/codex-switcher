@@ -1,24 +1,25 @@
 # cdx
 
-Simple CLI tool to switch between multiple OpenAI Pro subscriptions for OpenCode.
+CLI tool to switch between multiple OpenAI accounts for [OpenCode](https://opencode.ai).
+
+## Supported Configurations
+
+- **OpenAI Plus & Pro subscription accounts**: Log in to multiple OpenAI accounts via OAuth and switch the active auth credentials used by OpenCode.
 
 ## Requirements
 
 - macOS (uses Keychain via the `security` command)
-- Bun
+- [Bun](https://bun.sh) runtime
 
 ## Install
 
 ```bash
-git clone https://github.com/bjesuiter/codex-switcher.git
-cd codex-switcher
-bun install
-bun link
+bun add -g @bjesuiter/codex-switch
 ```
 
 This exposes the `cdx` binary globally.
 
-## Quick Start
+## Usage
 
 ### Add your first account
 
@@ -26,7 +27,7 @@ This exposes the `cdx` binary globally.
 cdx login
 ```
 
-This opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in macOS Keychain.
+Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in macOS Keychain.
 
 ### Switch between accounts
 
@@ -34,7 +35,33 @@ This opens your browser to authenticate with OpenAI. After successful login, you
 cdx switch
 ```
 
-Cycles to the next configured account and writes credentials to `~/.local/share/opencode/auth.json`.
+Interactive picker to select an account. Writes credentials to `~/.local/share/opencode/auth.json`.
+
+```bash
+cdx switch --next
+```
+
+Cycles to the next configured account without prompting.
+
+```bash
+cdx switch <account-id-or-label>
+```
+
+Switch directly to a specific account by ID or label.
+
+### Label accounts
+
+```bash
+cdx label
+```
+
+Interactive prompt to assign a friendly name to an account.
+
+```bash
+cdx label <account> <new-label>
+```
+
+Assign a label directly.
 
 ### Interactive mode
 
@@ -54,17 +81,32 @@ Running `cdx` without arguments opens an interactive menu to:
 |---------|-------------|
 | `cdx` | Interactive mode |
 | `cdx login` | Add a new OpenAI account via OAuth |
-| `cdx switch` | Switch to the next configured account |
+| `cdx switch` | Switch account (interactive picker) |
+| `cdx switch --next` | Cycle to next account |
+| `cdx switch <id>` | Switch to specific account |
+| `cdx label` | Label an account (interactive) |
+| `cdx label <account> <label>` | Assign label directly |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
 
-## How it works
+## How It Works
 
 - OAuth credentials are stored securely in macOS Keychain
 - Account list is stored in `~/.config/cdx/accounts.json`
 - Active account credentials are written to `~/.local/share/opencode/auth.json`
 
-## Manual Configuration (Advanced)
+## For Developers
+
+### Install from source
+
+```bash
+git clone https://github.com/bjesuiter/codex-switcher.git
+cd codex-switcher
+bun install
+bun link
+```
+
+### Manual Configuration (Advanced)
 
 You can also manually add accounts to Keychain:
 
