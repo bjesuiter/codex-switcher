@@ -1,5 +1,9 @@
 # Agent Instructions
 
+## Reference Repos
+
+- `docs/codexbar/` — Local clone of [steipete/CodexBar](https://github.com/steipete/CodexBar) for reference on OpenAI Plus/Pro usage tracking via the undocumented usage API.
+
 ## Releasing a new version
 
 1. Increase version in `package.json`

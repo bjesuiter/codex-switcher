@@ -11,6 +11,7 @@ import {
 } from "./lib/interactive";
 import { performLogin } from "./lib/oauth/login";
 import { getStatus } from "./lib/status";
+import { fetchUsage, formatUsage, formatUsageCompact } from "./lib/usage";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
@@ -182,6 +183,14 @@ export const createProgram = (
           );
         }
 
+        const currentAccount = status.accounts.find((a) => a.isCurrent);
+        if (currentAccount) {
+          const usageResult = await fetchUsage(currentAccount.accountId);
+          if (usageResult.ok) {
+            process.stdout.write(`\nUsage: ${formatUsageCompact(usageResult.data)}\n`);
+          }
+        }
+
         process.stdout.write("\nAuth files:\n");
         const ocStatus = status.opencodeAuth.exists
           ? `active: ${status.opencodeAuth.accountId ?? "unknown"}`
@@ -194,6 +203,46 @@ export const createProgram = (
         process.stdout.write(`  Codex CLI: ${cxStatus}\n`);
 
         process.stdout.write("\n");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("usage")
+    .description("Show OpenAI usage for current account")
+    .argument("[account]", "Account ID or label (defaults to current)")
+    .action(async (account: string | undefined) => {
+      try {
+        const config = await loadConfig();
+
+        let targetAccountId: string;
+        if (account) {
+          const found = config.accounts.find(
+            (a) => a.accountId === account || a.label === account,
+          );
+          if (!found) {
+            throw new Error(
+              `Account "${account}" not found. Use 'cdx login' to add it.`,
+            );
+          }
+          targetAccountId = found.accountId;
+        } else {
+          const current = config.accounts[config.current];
+          if (!current) {
+            throw new Error("No current account. Use 'cdx login' to add one.");
+          }
+          targetAccountId = current.accountId;
+        }
+
+        const result = await fetchUsage(targetAccountId);
+        if (!result.ok) {
+          throw new Error(result.error.message);
+        }
+
+        process.stdout.write(`\n${formatUsage(result.data)}\n\n`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         process.stderr.write(`${message}\n`);
