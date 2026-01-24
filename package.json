@@ -1,5 +1,5 @@
 {
-  "name": "@bjesuiter/codex-switch",
+  "name": "@bjesuiter/codex-switcher",
   "version": "1.0.0",
   "type": "module",
   "description": "CLI tool to switch between multiple OpenAI accounts for OpenCode",
@@ -7,7 +7,10 @@
     "cdx": "cdx.ts"
   },
   "scripts": {
-    "build": "tsdown && bun run scripts/build-dist-pkg.ts"
+    "build": "tsdown && bun run scripts/build-dist-pkg.ts",
+    "prerelease": "bun run build",
+    "release": "npm publish --access public ./dist",
+    "test-npm-install": "bun run playground/test-npm-install.ts"
   },
   "keywords": [
     "openai",
