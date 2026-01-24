@@ -230,14 +230,20 @@ export const createProgram = (
           }
         }
 
+        const resolveLabel = (id: string | null) => {
+          if (!id) return "unknown";
+          const match = status.accounts.find((a) => a.accountId === id);
+          return match?.label ?? id;
+        };
+
         process.stdout.write("\nAuth files:\n");
         const ocStatus = status.opencodeAuth.exists
-          ? `active: ${status.opencodeAuth.accountId ?? "unknown"}`
+          ? `active: ${resolveLabel(status.opencodeAuth.accountId)}`
           : "not found";
         process.stdout.write(`  OpenCode: ${ocStatus}\n`);
 
         const cxStatus = status.codexAuth.exists
-          ? `active: ${status.codexAuth.accountId ?? "unknown"}`
+          ? `active: ${resolveLabel(status.codexAuth.accountId)}`
           : "not found";
         process.stdout.write(`  Codex CLI: ${cxStatus}\n`);
 
