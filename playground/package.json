@@ -1,0 +1,8 @@
+{
+  "name": "codex-switch-playground",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@bjesuiter/codex-switch": "latest"
+  }
+}
