@@ -2,6 +2,11 @@
 
 CLI tool to switch between multiple OpenAI accounts for [OpenCode](https://opencode.ai).
 
+## Why codex-switcher?
+
+Anthropic has a $100/month plan, but OpenAI only offers $20 and $200 plans.
+So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
+
 ## Supported Configurations
 
 - **OpenAI Plus & Pro subscription accounts**: Log in to multiple OpenAI accounts via OAuth and switch the active auth credentials used by OpenCode.

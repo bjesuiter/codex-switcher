@@ -1,0 +1,135 @@
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { configExists, loadConfig } from "./config";
+import { keychainPayloadExists, loadKeychainPayload } from "./keychain";
+import { getPaths } from "./paths";
+import type { OAuthPayload } from "./types";
+
+export type AccountStatus = {
+  accountId: string;
+  label?: string;
+  isCurrent: boolean;
+  keychainExists: boolean;
+  hasIdToken: boolean;
+  expiresAt: number | null;
+  expiresIn: string;
+};
+
+export type AuthFileStatus = {
+  exists: boolean;
+  accountId: string | null;
+};
+
+export type StatusInfo = {
+  accounts: AccountStatus[];
+  opencodeAuth: AuthFileStatus;
+  codexAuth: AuthFileStatus;
+};
+
+const formatDuration = (ms: number): string => {
+  const absMs = Math.abs(ms);
+  const seconds = Math.floor(absMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    const remainingHours = hours % 24;
+    return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+  }
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  }
+  if (minutes > 0) return `${minutes}m`;
+  return `${seconds}s`;
+};
+
+export const formatExpiry = (expiresAt: number | null): string => {
+  if (expiresAt === null) return "unknown";
+
+  const remaining = expiresAt - Date.now();
+  if (remaining <= 0) {
+    return `EXPIRED ${formatDuration(remaining)} ago`;
+  }
+  return `expires in ${formatDuration(remaining)}`;
+};
+
+const readOpenCodeAuthAccount = async (): Promise<AuthFileStatus> => {
+  const { authPath } = getPaths();
+  if (!existsSync(authPath)) {
+    return { exists: false, accountId: null };
+  }
+  try {
+    const raw = await readFile(authPath, "utf8");
+    const parsed = JSON.parse(raw) as { openai?: { accountId?: string } };
+    return { exists: true, accountId: parsed.openai?.accountId ?? null };
+  } catch {
+    return { exists: true, accountId: null };
+  }
+};
+
+const readCodexAuthAccount = async (): Promise<AuthFileStatus> => {
+  const { codexAuthPath } = getPaths();
+  if (!existsSync(codexAuthPath)) {
+    return { exists: false, accountId: null };
+  }
+  try {
+    const raw = await readFile(codexAuthPath, "utf8");
+    const parsed = JSON.parse(raw) as { tokens?: { account_id?: string } };
+    return { exists: true, accountId: parsed.tokens?.account_id ?? null };
+  } catch {
+    return { exists: true, accountId: null };
+  }
+};
+
+const getAccountStatus = (
+  accountId: string,
+  isCurrent: boolean,
+  label?: string,
+): AccountStatus => {
+  const keychainExists = keychainPayloadExists(accountId);
+
+  let expiresAt: number | null = null;
+  let hasIdToken = false;
+
+  if (keychainExists) {
+    try {
+      const payload: OAuthPayload = loadKeychainPayload(accountId);
+      expiresAt = payload.expires;
+      hasIdToken = !!payload.idToken;
+    } catch {
+    }
+  }
+
+  return {
+    accountId,
+    label,
+    isCurrent,
+    keychainExists,
+    hasIdToken,
+    expiresAt,
+    expiresIn: formatExpiry(expiresAt),
+  };
+};
+
+export const getStatus = async (): Promise<StatusInfo> => {
+  const accounts: AccountStatus[] = [];
+
+  if (configExists()) {
+    const config = await loadConfig();
+    for (let i = 0; i < config.accounts.length; i++) {
+      const account = config.accounts[i];
+      accounts.push(
+        getAccountStatus(account.accountId, i === config.current, account.label),
+      );
+    }
+  }
+
+  const [opencodeAuth, codexAuth] = await Promise.all([
+    readOpenCodeAuthAccount(),
+    readCodexAuthAccount(),
+  ]);
+
+  return { accounts, opencodeAuth, codexAuth };
+};

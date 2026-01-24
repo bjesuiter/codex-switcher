@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import pkg from "./package.json";
-import { writeAuthFile } from "./lib/auth";
+import { writeAllAuthFiles } from "./lib/auth";
 import { loadConfig, saveConfig } from "./lib/config";
 import { loadKeychainPayload } from "./lib/keychain";
 import {
@@ -10,10 +10,11 @@ import {
   runInteractiveMode,
 } from "./lib/interactive";
 import { performLogin } from "./lib/oauth/login";
+import { getStatus } from "./lib/status";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
-export { writeAuthFile } from "./lib/auth";
+export { writeAuthFile, writeCodexAuthFile, writeAllAuthFiles } from "./lib/auth";
 export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
 export { runInteractiveMode } from "./lib/interactive";
 
@@ -27,13 +28,19 @@ export const switchNext = async () => {
   }
 
   const payload = loadKeychainPayload(nextAccount.accountId);
-  await writeAuthFile(payload);
+  const result = await writeAllAuthFiles(payload);
 
   config.current = nextIndex;
   await saveConfig(config);
 
   const displayName = nextAccount.label ?? payload.accountId;
   process.stdout.write(`Switched to account ${displayName}\n`);
+
+  if (result.codexMissingIdToken) {
+    process.stderr.write(
+      `Warning: Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.\n`,
+    );
+  }
 };
 
 export const switchToAccount = async (identifier: string) => {
@@ -50,13 +57,19 @@ export const switchToAccount = async (identifier: string) => {
 
   const account = config.accounts[index];
   const payload = loadKeychainPayload(account.accountId);
-  await writeAuthFile(payload);
+  const result = await writeAllAuthFiles(payload);
 
   config.current = index;
   await saveConfig(config);
 
   const displayName = account.label ?? account.accountId;
   process.stdout.write(`Switched to account ${displayName}\n`);
+
+  if (result.codexMissingIdToken) {
+    process.stderr.write(
+      `Warning: Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.\n`,
+    );
+  }
 };
 
 export const interactiveMode = runInteractiveMode;
@@ -137,6 +150,50 @@ export const createProgram = (
         } else {
           await handleLabelAccount();
         }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command("status")
+    .description("Show account status, token expiry, and auth file state")
+    .action(async () => {
+      try {
+        const status = await getStatus();
+
+        if (status.accounts.length === 0) {
+          process.stdout.write("No accounts configured. Use 'cdx login' to add one.\n");
+          return;
+        }
+
+        process.stdout.write("\nAccounts:\n");
+        for (const account of status.accounts) {
+          const marker = account.isCurrent ? "→ " : "  ";
+          const name = account.label
+            ? `${account.label} (${account.accountId})`
+            : account.accountId;
+          const keychain = account.keychainExists ? "" : " [no keychain]";
+          const idToken = account.hasIdToken ? "" : " [no id_token]";
+          process.stdout.write(
+            `${marker}${name} — ${account.expiresIn}${keychain}${idToken}\n`,
+          );
+        }
+
+        process.stdout.write("\nAuth files:\n");
+        const ocStatus = status.opencodeAuth.exists
+          ? `active: ${status.opencodeAuth.accountId ?? "unknown"}`
+          : "not found";
+        process.stdout.write(`  OpenCode: ${ocStatus}\n`);
+
+        const cxStatus = status.codexAuth.exists
+          ? `active: ${status.codexAuth.accountId ?? "unknown"}`
+          : "not found";
+        process.stdout.write(`  Codex CLI: ${cxStatus}\n`);
+
+        process.stdout.write("\n");
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         process.stderr.write(`${message}\n`);

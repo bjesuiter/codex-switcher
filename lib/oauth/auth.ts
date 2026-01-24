@@ -14,7 +14,7 @@ export type PKCEPair = {
 };
 
 export type TokenResult =
-  | { type: "success"; access: string; refresh: string; expires: number }
+  | { type: "success"; access: string; refresh: string; expires: number; idToken?: string }
   | { type: "failed" };
 
 export type JWTPayload = {
@@ -79,6 +79,7 @@ export const exchangeAuthorizationCode = async (
     access_token?: string;
     refresh_token?: string;
     expires_in?: number;
+    id_token?: string;
   };
 
   if (
@@ -94,6 +95,7 @@ export const exchangeAuthorizationCode = async (
     access: json.access_token,
     refresh: json.refresh_token,
     expires: Date.now() + json.expires_in * 1000,
+    idToken: json.id_token,
   };
 };
 
@@ -119,6 +121,7 @@ export const refreshAccessToken = async (
       access_token?: string;
       refresh_token?: string;
       expires_in?: number;
+      id_token?: string;
     };
 
     if (
@@ -134,6 +137,7 @@ export const refreshAccessToken = async (
       access: json.access_token,
       refresh: json.refresh_token,
       expires: Date.now() + json.expires_in * 1000,
+      idToken: json.id_token,
     };
   } catch {
     return { type: "failed" };

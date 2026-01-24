@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { writeAuthFile } from "./auth";
+import { writeAllAuthFiles } from "./auth";
 import { configExists, loadConfig, saveConfig } from "./config";
 import {
   deleteKeychainPayload,
@@ -8,9 +8,10 @@ import {
   loadKeychainPayload,
 } from "./keychain";
 import { performLogin } from "./oauth/login";
+import { getStatus } from "./status";
 import type { Config } from "./types";
 
-type MenuAction = "list" | "switch" | "add" | "remove" | "label" | "exit";
+type MenuAction = "list" | "switch" | "add" | "remove" | "label" | "status" | "exit";
 
 const getAccountDisplay = (
   accountId: string,
@@ -88,14 +89,29 @@ export const handleSwitchAccount = async (): Promise<void> => {
     return;
   }
 
-  const payload = loadKeychainPayload(selectedAccount.accountId);
-  await writeAuthFile(payload);
+  let payload;
+  try {
+    payload = loadKeychainPayload(selectedAccount.accountId);
+  } catch {
+    p.log.error(
+      `Missing credentials for account ${selectedAccount.label ?? selectedAccount.accountId}. Re-login with 'cdx login'.`,
+    );
+    return;
+  }
+
+  const result = await writeAllAuthFiles(payload);
 
   config.current = selected as number;
   await saveConfig(config);
 
   const displayName = selectedAccount.label ?? selectedAccount.accountId;
   p.log.success(`Switched to account ${displayName}`);
+
+  if (result.codexMissingIdToken) {
+    p.log.warning(
+      "Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.",
+    );
+  }
 };
 
 const handleAddAccount = async (): Promise<void> => {
@@ -238,6 +254,37 @@ export const handleLabelAccount = async (): Promise<void> => {
   }
 };
 
+const handleStatus = async (): Promise<void> => {
+  const status = await getStatus();
+
+  if (status.accounts.length === 0) {
+    p.log.warning("No accounts configured. Use 'Add account' to get started.");
+    return;
+  }
+
+  p.log.info("Account status:");
+  for (const account of status.accounts) {
+    const marker = account.isCurrent ? "→ " : "  ";
+    const name = account.label
+      ? `${account.label} (${account.accountId})`
+      : account.accountId;
+    const keychain = account.keychainExists ? "" : " [no keychain]";
+    const idToken = account.hasIdToken ? "" : " [no id_token]";
+    p.log.message(`${marker}${name} — ${account.expiresIn}${keychain}${idToken}`);
+  }
+
+  const ocStatus = status.opencodeAuth.exists
+    ? `active: ${status.opencodeAuth.accountId ?? "unknown"}`
+    : "not found";
+  const cxStatus = status.codexAuth.exists
+    ? `active: ${status.codexAuth.accountId ?? "unknown"}`
+    : "not found";
+
+  p.log.info(`Auth files:`);
+  p.log.message(`  OpenCode: ${ocStatus}`);
+  p.log.message(`  Codex CLI: ${cxStatus}`);
+};
+
 export const runInteractiveMode = async (): Promise<void> => {
   p.intro("cdx - OpenAI Account Switcher");
 
@@ -274,6 +321,7 @@ export const runInteractiveMode = async (): Promise<void> => {
         { value: "add", label: "Add account (OAuth login)" },
         { value: "remove", label: "Remove account" },
         { value: "label", label: "Label account" },
+        { value: "status", label: "Account status & token expiry" },
         { value: "exit", label: "Exit" },
       ],
     });
@@ -298,6 +346,9 @@ export const runInteractiveMode = async (): Promise<void> => {
         break;
       case "label":
         await handleLabelAccount();
+        break;
+      case "status":
+        await handleStatus();
         break;
       case "exit":
         running = false;

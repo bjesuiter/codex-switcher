@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeAuthFile } from "./auth";
+import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile } from "./auth";
 import { loadConfig, saveConfig } from "./config";
 import { deleteKeychainPayload, saveKeychainPayload } from "./keychain";
 import { createTestPaths, getPaths, resetPaths, setPaths } from "./paths";
@@ -17,6 +17,7 @@ const TEST_PAYLOAD_1: OAuthPayload = {
   access: "access-token-1",
   expires: Date.now() + 3600000,
   accountId: TEST_ACCOUNT_1,
+  idToken: "id-token-1",
 };
 
 const TEST_PAYLOAD_2: OAuthPayload = {
@@ -76,6 +77,58 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
       expect(parsed.openai.access).toBe(TEST_PAYLOAD_1.access);
       expect(parsed.openai.expires).toBe(TEST_PAYLOAD_1.expires);
       expect(parsed.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+  });
+
+  describe("writeCodexAuthFile", () => {
+    it("writes codex auth.json in correct format", async () => {
+      await writeCodexAuthFile(TEST_PAYLOAD_1);
+
+      const { codexAuthPath } = getPaths();
+      expect(codexAuthPath.startsWith(testDir)).toBe(true);
+      expect(existsSync(codexAuthPath)).toBe(true);
+
+      const content = await readFile(codexAuthPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed.OPENAI_API_KEY).toBeNull();
+      expect(parsed.tokens.id_token).toBe("id-token-1");
+      expect(parsed.tokens.access_token).toBe(TEST_PAYLOAD_1.access);
+      expect(parsed.tokens.refresh_token).toBe(TEST_PAYLOAD_1.refresh);
+      expect(parsed.tokens.account_id).toBe(TEST_PAYLOAD_1.accountId);
+      expect(parsed.last_refresh).toBeDefined();
+    });
+
+    it("writes null id_token when not available", async () => {
+      await writeCodexAuthFile(TEST_PAYLOAD_2);
+
+      const { codexAuthPath } = getPaths();
+      const content = await readFile(codexAuthPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed.tokens.id_token).toBeNull();
+    });
+  });
+
+  describe("writeAllAuthFiles", () => {
+    it("writes both auth files when idToken is present", async () => {
+      const result = await writeAllAuthFiles(TEST_PAYLOAD_1);
+
+      const { authPath, codexAuthPath } = getPaths();
+      expect(existsSync(authPath)).toBe(true);
+      expect(existsSync(codexAuthPath)).toBe(true);
+      expect(result.codexWritten).toBe(true);
+      expect(result.codexMissingIdToken).toBe(false);
+    });
+
+    it("skips codex auth and warns when idToken is missing", async () => {
+      const result = await writeAllAuthFiles(TEST_PAYLOAD_2);
+
+      const { authPath, codexAuthPath } = getPaths();
+      expect(existsSync(authPath)).toBe(true);
+      expect(existsSync(codexAuthPath)).toBe(false);
+      expect(result.codexWritten).toBe(false);
+      expect(result.codexMissingIdToken).toBe(true);
     });
   });
 

@@ -14,4 +14,5 @@ export type OAuthPayload = {
   access: string;
   expires: number;
   accountId: string;
+  idToken?: string;
 };

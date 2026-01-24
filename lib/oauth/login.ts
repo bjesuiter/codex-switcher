@@ -100,6 +100,7 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
     access: tokenResult.access,
     expires: tokenResult.expires,
     accountId,
+    ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
   };
 
   saveKeychainPayload(accountId, payload);
