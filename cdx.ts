@@ -251,6 +251,25 @@ export const createProgram = (
     });
 
   program
+    .command("help")
+    .description("Show available commands and usage information")
+    .argument("[command]", "Show help for a specific command")
+    .action((commandName: string | undefined) => {
+      if (commandName) {
+        const cmd = program.commands.find((c) => c.name() === commandName);
+        if (cmd) {
+          cmd.outputHelp();
+        } else {
+          process.stderr.write(`Unknown command: ${commandName}\n`);
+          program.outputHelp();
+          process.exit(1);
+        }
+      } else {
+        program.outputHelp();
+      }
+    });
+
+  program
     .command("version")
     .description("Show CLI version")
     .action(() => {
