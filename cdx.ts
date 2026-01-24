@@ -36,13 +36,11 @@ export const switchNext = async () => {
   await saveConfig(config);
 
   const displayName = nextAccount.label ?? payload.accountId;
-  process.stdout.write(`Switched to account ${displayName}\n`);
-
-  if (result.codexMissingIdToken) {
-    process.stderr.write(
-      `Warning: Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.\n`,
-    );
-  }
+  const opencodeMark = "✓";
+  const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
+  process.stdout.write(
+    `Switched to account ${displayName} [OpenCode: ${opencodeMark}] [Codex CLI: ${codexMark}]\n`,
+  );
 };
 
 export const switchToAccount = async (identifier: string) => {
@@ -65,13 +63,11 @@ export const switchToAccount = async (identifier: string) => {
   await saveConfig(config);
 
   const displayName = account.label ?? account.accountId;
-  process.stdout.write(`Switched to account ${displayName}\n`);
-
-  if (result.codexMissingIdToken) {
-    process.stderr.write(
-      `Warning: Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.\n`,
-    );
-  }
+  const opencodeMark = "✓";
+  const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
+  process.stdout.write(
+    `Switched to account ${displayName} [OpenCode: ${opencodeMark}] [Codex CLI: ${codexMark}]\n`,
+  );
 };
 
 export const interactiveMode = runInteractiveMode;

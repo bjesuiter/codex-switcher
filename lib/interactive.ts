@@ -105,13 +105,11 @@ export const handleSwitchAccount = async (): Promise<void> => {
   await saveConfig(config);
 
   const displayName = selectedAccount.label ?? selectedAccount.accountId;
-  p.log.success(`Switched to account ${displayName}`);
-
-  if (result.codexMissingIdToken) {
-    p.log.warning(
-      "Codex CLI auth not updated (missing id_token). Re-login with 'cdx login' to enable Codex CLI switching.",
-    );
-  }
+  const opencodeMark = "✓";
+  const codexMark = result.codexWritten ? "✓" : "⚠ missing id_token";
+  p.log.success(
+    `Switched to account ${displayName} [OpenCode: ${opencodeMark}] [Codex CLI: ${codexMark}]`,
+  );
 };
 
 const handleAddAccount = async (): Promise<void> => {
