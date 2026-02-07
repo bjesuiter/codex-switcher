@@ -1,0 +1,77 @@
+import type { Command } from "commander";
+import { getStatus } from "../status";
+import { fetchUsage, formatUsageBars } from "../usage";
+import { exitWithCommandError } from "./errors";
+
+export const registerStatusCommand = (program: Command): void => {
+  program
+    .command("status")
+    .description("Show account status, token expiry, and auth file state")
+    .action(async () => {
+      try {
+        const status = await getStatus();
+
+        if (status.accounts.length === 0) {
+          process.stdout.write("No accounts configured. Use 'cdx login' to add one.\n");
+          return;
+        }
+
+        process.stdout.write("\n");
+        for (let i = 0; i < status.accounts.length; i++) {
+          const account = status.accounts[i];
+          const marker = account.isCurrent ? "→ " : "  ";
+          const warnings: string[] = [];
+          if (!account.keychainExists) warnings.push("[no keychain]");
+          if (!account.hasIdToken) warnings.push("[no id_token]");
+          const warnStr = warnings.length > 0 ? `  ${warnings.join(" ")}` : "";
+
+          const displayName = account.label ?? account.accountId;
+          process.stdout.write(`${marker}${displayName}${warnStr}\n`);
+
+          if (account.label) {
+            process.stdout.write(`    ${account.accountId}\n`);
+          }
+
+          process.stdout.write(`    ${account.expiresIn}\n`);
+
+          const usageResult = await fetchUsage(account.accountId);
+          if (usageResult.ok) {
+            const bars = formatUsageBars(usageResult.data);
+            for (const bar of bars) {
+              process.stdout.write(`${bar}\n`);
+            }
+          }
+
+          if (i < status.accounts.length - 1) {
+            process.stdout.write("\n");
+          }
+        }
+
+        const resolveLabel = (accountId: string | null): string => {
+          if (!accountId) return "unknown";
+          const match = status.accounts.find((account) => account.accountId === accountId);
+          return match?.label ?? accountId;
+        };
+
+        process.stdout.write("\nAuth files:\n");
+        const ocStatus = status.opencodeAuth.exists
+          ? `active: ${resolveLabel(status.opencodeAuth.accountId)}`
+          : "not found";
+        process.stdout.write(`  OpenCode: ${ocStatus}\n`);
+
+        const cxStatus = status.codexAuth.exists
+          ? `active: ${resolveLabel(status.codexAuth.accountId)}`
+          : "not found";
+        process.stdout.write(`  Codex CLI: ${cxStatus}\n`);
+
+        const piStatus = status.piAuth.exists
+          ? `active: ${resolveLabel(status.piAuth.accountId)}`
+          : "not found";
+        process.stdout.write(`  Pi Agent: ${piStatus}\n`);
+
+        process.stdout.write("\n");
+      } catch (error) {
+        exitWithCommandError(error);
+      }
+    });
+};
