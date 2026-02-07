@@ -52,7 +52,7 @@ export const performRefresh = async (
   label?: string,
 ): Promise<{ accountId: string } | null> => {
   const displayName = label ?? targetAccountId;
-  p.log.step(`Refreshing credentials for "${displayName}"...`);
+  p.log.step(`Re-authenticating account "${displayName}"...`);
 
   let flow;
   try {
@@ -106,10 +106,10 @@ export const performRefresh = async (
   }
 
   if (newAccountId !== targetAccountId) {
-    spinner.stop(
+    spinner.stop("Authentication completed for a different account.");
+    throw new Error(
       `Account mismatch: expected "${targetAccountId}" but got "${newAccountId}". Make sure you log in with the correct OpenAI account.`,
     );
-    return null;
   }
 
   spinner.message("Updating credentials...");

@@ -1,8 +1,10 @@
 import type { Command } from "commander";
 import { loadConfig } from "../config";
 import { handleRefreshAccount } from "../interactive";
+import { keychainPayloadExists, loadKeychainPayload } from "../keychain";
 import { performRefresh } from "../oauth/login";
 import { writeActiveAuthFilesIfCurrent } from "../refresh";
+import { formatExpiry } from "../status";
 import { exitWithCommandError } from "./errors";
 import { writeUpdatedAuthSummary } from "./output";
 
@@ -10,7 +12,7 @@ export const registerRefreshCommand = (program: Command): void => {
   program
     .command("refresh")
     .description(
-      "Re-authenticate an existing account (update tokens without creating a duplicate)",
+      "Re-authenticate an existing account with full OAuth login (no duplicate account)",
     )
     .argument("[account]", "Account ID or label to refresh")
     .action(async (account: string | undefined) => {
@@ -25,6 +27,23 @@ export const registerRefreshCommand = (program: Command): void => {
               `Account "${account}" not found. Use 'cdx login' to add it.`,
             );
           }
+
+          const displayName = target.label ?? target.accountId;
+          let expiryState = "unknown";
+          let keychainState = "";
+          if (keychainPayloadExists(target.accountId)) {
+            try {
+              const payload = loadKeychainPayload(target.accountId);
+              expiryState = formatExpiry(payload.expires);
+            } catch {
+              expiryState = "unknown";
+            }
+          } else {
+            keychainState = " [no keychain]";
+          }
+          process.stdout.write(
+            `Current token status for ${displayName}: ${expiryState}${keychainState}\n`,
+          );
 
           const result = await performRefresh(target.accountId, target.label);
           if (!result) {

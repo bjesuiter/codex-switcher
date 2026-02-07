@@ -9,7 +9,7 @@ import {
 } from "./keychain";
 import { performLogin, performRefresh } from "./oauth/login";
 import { writeActiveAuthFilesIfCurrent } from "./refresh";
-import { getStatus } from "./status";
+import { formatExpiry, getStatus } from "./status";
 import type { Config } from "./types";
 
 type MenuAction = "list" | "switch" | "add" | "refresh" | "remove" | "label" | "status" | "exit";
@@ -21,6 +21,19 @@ const getAccountDisplay = (
 ): string => {
   const name = label ? `${label} (${accountId})` : accountId;
   return isCurrent ? `${name} (current)` : name;
+};
+
+const getRefreshExpiryState = (accountId: string): string => {
+  if (!keychainPayloadExists(accountId)) {
+    return "unknown [no keychain]";
+  }
+
+  try {
+    const payload = loadKeychainPayload(accountId);
+    return formatExpiry(payload.expires);
+  } catch {
+    return "unknown";
+  }
 };
 
 const handleListAccounts = async (): Promise<void> => {
@@ -140,11 +153,11 @@ export const handleRefreshAccount = async (): Promise<void> => {
 
   const options = config.accounts.map((account) => ({
     value: account.accountId,
-    label: getAccountDisplay(
+    label: `${getAccountDisplay(
       account.accountId,
       account.accountId === currentAccountId,
       account.label,
-    ),
+    )} — ${getRefreshExpiryState(account.accountId)}`,
   }));
 
   const selected = await p.select({
@@ -159,6 +172,9 @@ export const handleRefreshAccount = async (): Promise<void> => {
 
   const accountId = selected as string;
   const account = config.accounts.find((a) => a.accountId === accountId);
+  const expiryState = getRefreshExpiryState(accountId);
+  const displayName = account?.label ?? accountId;
+  p.log.info(`Current token status for ${displayName}: ${expiryState}`);
 
   try {
     const result = await performRefresh(accountId, account?.label);
