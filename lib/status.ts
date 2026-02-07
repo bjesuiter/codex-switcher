@@ -24,6 +24,7 @@ export type StatusInfo = {
   accounts: AccountStatus[];
   opencodeAuth: AuthFileStatus;
   codexAuth: AuthFileStatus;
+  piAuth: AuthFileStatus;
 };
 
 const formatDuration = (ms: number): string => {
@@ -83,6 +84,20 @@ const readCodexAuthAccount = async (): Promise<AuthFileStatus> => {
   }
 };
 
+const readPiAuthAccount = async (): Promise<AuthFileStatus> => {
+  const { piAuthPath } = getPaths();
+  if (!existsSync(piAuthPath)) {
+    return { exists: false, accountId: null };
+  }
+  try {
+    const raw = await readFile(piAuthPath, "utf8");
+    const parsed = JSON.parse(raw) as { "openai-codex"?: { accountId?: string } };
+    return { exists: true, accountId: parsed["openai-codex"]?.accountId ?? null };
+  } catch {
+    return { exists: true, accountId: null };
+  }
+};
+
 const getAccountStatus = (
   accountId: string,
   isCurrent: boolean,
@@ -126,10 +141,11 @@ export const getStatus = async (): Promise<StatusInfo> => {
     }
   }
 
-  const [opencodeAuth, codexAuth] = await Promise.all([
+  const [opencodeAuth, codexAuth, piAuth] = await Promise.all([
     readOpenCodeAuthAccount(),
     readCodexAuthAccount(),
+    readPiAuthAccount(),
   ]);
 
-  return { accounts, opencodeAuth, codexAuth };
+  return { accounts, opencodeAuth, codexAuth, piAuth };
 };

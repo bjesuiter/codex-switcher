@@ -17,7 +17,7 @@ import { fetchUsage, formatUsage, formatUsageBars, formatUsageCompact, formatUsa
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
-export { writeAuthFile, writeCodexAuthFile, writeAllAuthFiles } from "./lib/auth";
+export { writeAuthFile, writeCodexAuthFile, writePiAuthFile, writeAllAuthFiles } from "./lib/auth";
 export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
 export { runInteractiveMode } from "./lib/interactive";
 
@@ -38,6 +38,7 @@ export const switchNext = async () => {
 
   const displayName = nextAccount.label ?? payload.accountId;
   const opencodeMark = "✓";
+  const piMark = result.piWritten ? "✓" : "✗";
   const codexMark = result.codexWritten
     ? "✓"
     : result.codexCleared
@@ -45,6 +46,7 @@ export const switchNext = async () => {
       : "⚠ missing id_token";
   process.stdout.write(`Switched to account ${displayName}\n`);
   process.stdout.write(`  OpenCode:  ${opencodeMark}\n`);
+  process.stdout.write(`  Pi Agent:  ${piMark}\n`);
   process.stdout.write(`  Codex CLI: ${codexMark}\n`);
 };
 
@@ -69,6 +71,7 @@ export const switchToAccount = async (identifier: string) => {
 
   const displayName = account.label ?? account.accountId;
   const opencodeMark = "✓";
+  const piMark = result.piWritten ? "✓" : "✗";
   const codexMark = result.codexWritten
     ? "✓"
     : result.codexCleared
@@ -76,6 +79,7 @@ export const switchToAccount = async (identifier: string) => {
       : "⚠ missing id_token";
   process.stdout.write(`Switched to account ${displayName}\n`);
   process.stdout.write(`  OpenCode:  ${opencodeMark}\n`);
+  process.stdout.write(`  Pi Agent:  ${piMark}\n`);
   process.stdout.write(`  Codex CLI: ${codexMark}\n`);
 };
 
@@ -134,6 +138,7 @@ export const createProgram = (
           }
           const authResult = await writeActiveAuthFilesIfCurrent(result.accountId);
           if (authResult) {
+            const piMark = authResult.piWritten ? "✓" : "✗";
             const codexMark = authResult.codexWritten
               ? "✓"
               : authResult.codexCleared
@@ -141,6 +146,7 @@ export const createProgram = (
                 : "⚠ missing id_token";
             process.stdout.write("Updated active auth files:\n");
             process.stdout.write("  OpenCode:  ✓\n");
+            process.stdout.write(`  Pi Agent:  ${piMark}\n`);
             process.stdout.write(`  Codex CLI: ${codexMark}\n`);
           }
         } else {
@@ -265,6 +271,11 @@ export const createProgram = (
           ? `active: ${resolveLabel(status.codexAuth.accountId)}`
           : "not found";
         process.stdout.write(`  Codex CLI: ${cxStatus}\n`);
+
+        const piStatus = status.piAuth.exists
+          ? `active: ${resolveLabel(status.piAuth.accountId)}`
+          : "not found";
+        process.stdout.write(`  Pi Agent: ${piStatus}\n`);
 
         process.stdout.write("\n");
       } catch (error) {

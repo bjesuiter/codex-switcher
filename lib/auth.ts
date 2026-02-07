@@ -56,7 +56,26 @@ export const writeCodexAuthFile = async (payload: OAuthPayload): Promise<void> =
   await writeFile(codexAuthPath, JSON.stringify(existing, null, 2), "utf8");
 };
 
+export const writePiAuthFile = async (payload: OAuthPayload): Promise<void> => {
+  const { piAuthPath } = getPaths();
+  const piAuthDir = path.dirname(piAuthPath);
+  await mkdir(piAuthDir, { recursive: true });
+
+  const existing = await readExistingJson(piAuthPath);
+
+  existing["openai-codex"] = {
+    type: "oauth",
+    access: payload.access,
+    refresh: payload.refresh,
+    expires: payload.expires,
+    accountId: payload.accountId,
+  };
+
+  await writeFile(piAuthPath, JSON.stringify(existing, null, 2), "utf8");
+};
+
 export type WriteAuthResult = {
+  piWritten: boolean;
   codexWritten: boolean;
   codexMissingIdToken: boolean;
   codexCleared: boolean;
@@ -64,10 +83,16 @@ export type WriteAuthResult = {
 
 export const writeAllAuthFiles = async (payload: OAuthPayload): Promise<WriteAuthResult> => {
   await writeAuthFile(payload);
+  await writePiAuthFile(payload);
 
   if (payload.idToken) {
     await writeCodexAuthFile(payload);
-    return { codexWritten: true, codexMissingIdToken: false, codexCleared: false };
+    return {
+      piWritten: true,
+      codexWritten: true,
+      codexMissingIdToken: false,
+      codexCleared: false,
+    };
   }
 
   const { codexAuthPath } = getPaths();
@@ -81,5 +106,10 @@ export const writeAllAuthFiles = async (payload: OAuthPayload): Promise<WriteAut
     }
   }
 
-  return { codexWritten: false, codexMissingIdToken: true, codexCleared };
+  return {
+    piWritten: true,
+    codexWritten: false,
+    codexMissingIdToken: true,
+    codexCleared,
+  };
 };

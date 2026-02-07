@@ -40,7 +40,10 @@ Opens your browser to authenticate with OpenAI. After successful login, your cre
 cdx switch
 ```
 
-Interactive picker to select an account. Writes credentials to `~/.local/share/opencode/auth.json`.
+Interactive picker to select an account. Writes credentials to:
+- `~/.local/share/opencode/auth.json` (OpenCode)
+- `~/.pi/agent/auth.json` (Pi agent, or `$PI_CODING_AGENT_DIR/auth.json` when `PI_CODING_AGENT_DIR` is set)
+- `~/.codex/auth.json` (Codex CLI; requires `id_token`)
 
 ```bash
 cdx switch --next
@@ -101,7 +104,10 @@ Running `cdx` without arguments opens an interactive menu to:
 
 - OAuth credentials are stored securely in macOS Keychain
 - Account list is stored in `~/.config/cdx/accounts.json`
-- Active account credentials are written to `~/.local/share/opencode/auth.json`
+- Active account credentials are written to:
+  - `~/.local/share/opencode/auth.json`
+  - `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
+  - `~/.codex/auth.json` (when `id_token` exists)
 
 ## For Developers
 

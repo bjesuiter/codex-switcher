@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile } from "./auth";
+import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile, writePiAuthFile } from "./auth";
 import { loadConfig, saveConfig } from "./config";
 import { deleteKeychainPayload, saveKeychainPayload } from "./keychain";
 import { createTestPaths, getPaths, resetPaths, setPaths } from "./paths";
@@ -12,6 +12,7 @@ import type { Config, OAuthPayload } from "./types";
 
 const TEST_ACCOUNT_1 = "switch-test-account-1-" + Date.now();
 const TEST_ACCOUNT_2 = "switch-test-account-2-" + Date.now();
+const originalPiAgentDir = process.env.PI_CODING_AGENT_DIR;
 
 const TEST_PAYLOAD_1: OAuthPayload = {
   refresh: "refresh-token-1",
@@ -43,6 +44,11 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
   });
 
   afterEach(() => {
+    if (originalPiAgentDir === undefined) {
+      delete process.env.PI_CODING_AGENT_DIR;
+    } else {
+      process.env.PI_CODING_AGENT_DIR = originalPiAgentDir;
+    }
     resetPaths();
 
     try {
@@ -159,13 +165,66 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
     });
   });
 
+  describe("writePiAuthFile", () => {
+    it("writes pi auth.json in correct format", async () => {
+      await writePiAuthFile(TEST_PAYLOAD_1);
+
+      const { piAuthPath } = getPaths();
+      expect(piAuthPath.startsWith(testDir)).toBe(true);
+      expect(existsSync(piAuthPath)).toBe(true);
+
+      const content = await readFile(piAuthPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed["openai-codex"].type).toBe("oauth");
+      expect(parsed["openai-codex"].access).toBe(TEST_PAYLOAD_1.access);
+      expect(parsed["openai-codex"].refresh).toBe(TEST_PAYLOAD_1.refresh);
+      expect(parsed["openai-codex"].expires).toBe(TEST_PAYLOAD_1.expires);
+      expect(parsed["openai-codex"].accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+
+    it("preserves existing sections in pi auth.json", async () => {
+      const { piAuthPath } = getPaths();
+      const piAuthDir = path.dirname(piAuthPath);
+      mkdirSync(piAuthDir, { recursive: true });
+
+      const existing = {
+        foo: "bar",
+        "openai-other": { enabled: true },
+      };
+      await writeFile(piAuthPath, JSON.stringify(existing, null, 2), "utf8");
+
+      await writePiAuthFile(TEST_PAYLOAD_1);
+
+      const content = await readFile(piAuthPath, "utf8");
+      const parsed = JSON.parse(content);
+
+      expect(parsed.foo).toBe("bar");
+      expect(parsed["openai-other"].enabled).toBe(true);
+      expect(parsed["openai-codex"].accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+
+    it("throws when PI_CODING_AGENT_DIR points to a non-directory path", async () => {
+      const blockedPiAgentDir = path.join(testDir, "pi-agent-dir-as-file");
+      await writeFile(blockedPiAgentDir, "not-a-directory", "utf8");
+
+      process.env.PI_CODING_AGENT_DIR = blockedPiAgentDir;
+      resetPaths();
+
+      expect(getPaths().piAuthPath).toBe(path.join(blockedPiAgentDir, "auth.json"));
+      await expect(writePiAuthFile(TEST_PAYLOAD_1)).rejects.toThrow(/EEXIST|ENOTDIR/);
+    });
+  });
+
   describe("writeAllAuthFiles", () => {
     it("writes both auth files when idToken is present", async () => {
       const result = await writeAllAuthFiles(TEST_PAYLOAD_1);
 
-      const { authPath, codexAuthPath } = getPaths();
+      const { authPath, codexAuthPath, piAuthPath } = getPaths();
       expect(existsSync(authPath)).toBe(true);
       expect(existsSync(codexAuthPath)).toBe(true);
+      expect(existsSync(piAuthPath)).toBe(true);
+      expect(result.piWritten).toBe(true);
       expect(result.codexWritten).toBe(true);
       expect(result.codexMissingIdToken).toBe(false);
     });
@@ -178,8 +237,10 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
 
       const result = await writeAllAuthFiles(TEST_PAYLOAD_2);
 
-      const { authPath } = getPaths();
+      const { authPath, piAuthPath } = getPaths();
       expect(existsSync(authPath)).toBe(true);
+      expect(existsSync(piAuthPath)).toBe(true);
+      expect(result.piWritten).toBe(true);
       expect(existsSync(codexAuthPath)).toBe(false);
       expect(result.codexWritten).toBe(false);
       expect(result.codexMissingIdToken).toBe(true);
@@ -201,10 +262,12 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
 
       const result = await writeActiveAuthFilesIfCurrent(TEST_ACCOUNT_1);
 
-      const { authPath, codexAuthPath } = getPaths();
+      const { authPath, codexAuthPath, piAuthPath } = getPaths();
+      expect(result?.piWritten).toBe(true);
       expect(result?.codexWritten).toBe(true);
       expect(existsSync(authPath)).toBe(true);
       expect(existsSync(codexAuthPath)).toBe(true);
+      expect(existsSync(piAuthPath)).toBe(true);
     });
 
     it("skips auth file updates when refreshed account is not current", async () => {
@@ -220,10 +283,11 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
 
       const result = await writeActiveAuthFilesIfCurrent(TEST_ACCOUNT_2);
 
-      const { authPath, codexAuthPath } = getPaths();
+      const { authPath, codexAuthPath, piAuthPath } = getPaths();
       expect(result).toBeNull();
       expect(existsSync(authPath)).toBe(false);
       expect(existsSync(codexAuthPath)).toBe(false);
+      expect(existsSync(piAuthPath)).toBe(false);
     });
   });
 

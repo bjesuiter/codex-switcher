@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0
+
+### Features
+
+- Add Pi Agent auth switching: write active credentials to `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
+- Extend `cdx status` output to include Pi Agent auth file/account state
+- Show Pi Agent auth update status in switch and refresh flows (CLI and interactive mode)
+
+### Fixes
+
+- Recompute default paths on `resetPaths()` so `PI_CODING_AGENT_DIR` changes are applied correctly
+- Add failure-path test coverage for invalid/unwritable `PI_CODING_AGENT_DIR` targets
+- Add realistic Pi auth fixture coverage for `openai-codex` auth.json shape
+
 ## 1.1.0
 
 ### Features

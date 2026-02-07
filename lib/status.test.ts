@@ -39,6 +39,20 @@ describe("formatExpiry", () => {
 
 const TEST_ACCOUNT = "status-test-" + Date.now();
 
+const REALISTIC_PI_AUTH_FIXTURE = {
+  "openai-codex": {
+    type: "oauth",
+    access: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.access.token",
+    refresh: "rt_mock_refresh_token",
+    expires: 1771332000000,
+    accountId: "1dM6Ly9hcGkub3B1bmFpLmNvbS9vcmdzLzQx",
+  },
+  anthropic: {
+    type: "api_key",
+    key: "sk-ant-mock",
+  },
+};
+
 describe.skipIf(!!process.env.CI)("getStatus", () => {
   let testDir: string;
 
@@ -119,5 +133,31 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
     const status = await getStatus();
     expect(status.opencodeAuth.exists).toBe(false);
     expect(status.codexAuth.exists).toBe(false);
+    expect(status.piAuth.exists).toBe(false);
+  });
+
+  it("reads pi auth file account", async () => {
+    const { piAuthPath } = createTestPaths(testDir);
+    await mkdir(path.dirname(piAuthPath), { recursive: true });
+    await writeFile(
+      piAuthPath,
+      JSON.stringify({ "openai-codex": { accountId: "pi-acc-123" } }),
+    );
+
+    const status = await getStatus();
+    expect(status.piAuth.exists).toBe(true);
+    expect(status.piAuth.accountId).toBe("pi-acc-123");
+  });
+
+  it("reads account from realistic pi auth.json shape", async () => {
+    const { piAuthPath } = createTestPaths(testDir);
+    await mkdir(path.dirname(piAuthPath), { recursive: true });
+    await writeFile(piAuthPath, JSON.stringify(REALISTIC_PI_AUTH_FIXTURE, null, 2));
+
+    const status = await getStatus();
+    expect(status.piAuth.exists).toBe(true);
+    expect(status.piAuth.accountId).toBe(
+      REALISTIC_PI_AUTH_FIXTURE["openai-codex"].accountId,
+    );
   });
 });

@@ -107,6 +107,7 @@ export const handleSwitchAccount = async (): Promise<void> => {
 
   const displayName = selectedAccount.label ?? selectedAccount.accountId;
   const opencodeMark = "✓";
+  const piMark = result.piWritten ? "✓" : "✗";
   const codexMark = result.codexWritten
     ? "✓"
     : result.codexCleared
@@ -114,6 +115,7 @@ export const handleSwitchAccount = async (): Promise<void> => {
       : "⚠ missing id_token";
   p.log.success(`Switched to account ${displayName}`);
   p.log.message(`  OpenCode:  ${opencodeMark}`);
+  p.log.message(`  Pi Agent:  ${piMark}`);
   p.log.message(`  Codex CLI: ${codexMark}`);
 };
 
@@ -165,6 +167,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
     } else {
       const authResult = await writeActiveAuthFilesIfCurrent(result.accountId);
       if (authResult) {
+        const piMark = authResult.piWritten ? "✓" : "✗";
         const codexMark = authResult.codexWritten
           ? "✓"
           : authResult.codexCleared
@@ -172,6 +175,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
             : "⚠ missing id_token";
         p.log.message("Updated active auth files:");
         p.log.message("  OpenCode:  ✓");
+        p.log.message(`  Pi Agent:  ${piMark}`);
         p.log.message(`  Codex CLI: ${codexMark}`);
       }
     }
@@ -342,10 +346,14 @@ const handleStatus = async (): Promise<void> => {
   const cxStatus = status.codexAuth.exists
     ? `active: ${status.codexAuth.accountId ?? "unknown"}`
     : "not found";
+  const piStatus = status.piAuth.exists
+    ? `active: ${status.piAuth.accountId ?? "unknown"}`
+    : "not found";
 
   p.log.info(`Auth files:`);
   p.log.message(`  OpenCode: ${ocStatus}`);
   p.log.message(`  Codex CLI: ${cxStatus}`);
+  p.log.message(`  Pi Agent: ${piStatus}`);
 };
 
 export const runInteractiveMode = async (): Promise<void> => {
