@@ -31,7 +31,10 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 
 ## Supported Configurations
 
-- **OpenAI Plus & Pro subscription accounts**: Log in to multiple OpenAI accounts via OAuth and switch the active auth credentials used by OpenCode.
+- **OpenAI Plus & Pro subscription accounts**: Log in to multiple OpenAI OAuth accounts and switch the active credentials.
+- **OpenCode auth target**: Writes active credentials to `~/.local/share/opencode/auth.json`.
+- **Pi Agent auth target**: Writes active credentials to `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`).
+- **Codex CLI auth target**: Writes active credentials to `~/.codex/auth.json` when `id_token` is available.
 
 ## Requirements
 
