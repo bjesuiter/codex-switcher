@@ -1,5 +1,11 @@
 # Changelog
 
+## Upcoming
+
+### Internal
+
+- Modularize CLI command wiring by moving command handlers into per-command modules under `lib/commands/`, keeping `cdx.ts` as a thin composition entrypoint
+
 ## 1.2.0
 
 ### Features
