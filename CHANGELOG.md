@@ -2,6 +2,10 @@
 
 ## Upcoming
 
+### Features
+
+- Rename `cdx refresh` command to `cdx relogin`
+
 ### Internal
 
 - Modularize CLI command wiring by moving command handlers into per-command modules under `lib/commands/`, keeping `cdx.ts` as a thin composition entrypoint

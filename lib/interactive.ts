@@ -12,7 +12,7 @@ import { writeActiveAuthFilesIfCurrent } from "./refresh";
 import { formatExpiry, getStatus } from "./status";
 import type { Config } from "./types";
 
-type MenuAction = "list" | "switch" | "add" | "refresh" | "remove" | "label" | "status" | "exit";
+type MenuAction = "list" | "switch" | "add" | "relogin" | "remove" | "label" | "status" | "exit";
 
 const getAccountDisplay = (
   accountId: string,
@@ -136,7 +136,7 @@ const handleAddAccount = async (): Promise<void> => {
   await performLogin();
 };
 
-export const handleRefreshAccount = async (): Promise<void> => {
+export const handleReloginAccount = async (): Promise<void> => {
   if (!configExists()) {
     p.log.warning("No accounts configured. Use 'Add account' first.");
     return;
@@ -145,7 +145,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
   const config = await loadConfig();
 
   if (config.accounts.length === 0) {
-    p.log.warning("No accounts to refresh.");
+    p.log.warning("No accounts to re-login.");
     return;
   }
 
@@ -161,7 +161,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
   }));
 
   const selected = await p.select({
-    message: "Select account to refresh:",
+    message: "Select account to re-login:",
     options,
   });
 
@@ -179,7 +179,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
   try {
     const result = await performRefresh(accountId, account?.label);
     if (!result) {
-      p.log.warning("Refresh was not completed.");
+      p.log.warning("Re-login was not completed.");
     } else {
       const authResult = await writeActiveAuthFilesIfCurrent(result.accountId);
       if (authResult) {
@@ -197,7 +197,7 @@ export const handleRefreshAccount = async (): Promise<void> => {
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    p.log.error(`Refresh failed: ${msg}`);
+    p.log.error(`Re-login failed: ${msg}`);
   }
 };
 
@@ -406,7 +406,7 @@ export const runInteractiveMode = async (): Promise<void> => {
         },
         { value: "switch", label: "Switch account" },
         { value: "add", label: "Add account (OAuth login)" },
-        { value: "refresh", label: "Refresh account (re-login)" },
+        { value: "relogin", label: "Re-login account" },
         { value: "remove", label: "Remove account" },
         { value: "label", label: "Label account" },
         { value: "status", label: "Account status & token expiry" },
@@ -429,8 +429,8 @@ export const runInteractiveMode = async (): Promise<void> => {
       case "add":
         await handleAddAccount();
         break;
-      case "refresh":
-        await handleRefreshAccount();
+      case "relogin":
+        await handleReloginAccount();
         break;
       case "remove":
         await handleRemoveAccount();

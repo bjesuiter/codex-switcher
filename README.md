@@ -111,6 +111,8 @@ Running `cdx` without arguments opens an interactive menu to:
 |---------|-------------|
 | `cdx` | Interactive mode |
 | `cdx login` | Add a new OpenAI account via OAuth |
+| `cdx relogin` | Re-authenticate an existing account via OAuth |
+| `cdx relogin <account>` | Re-authenticate a specific account by ID or label |
 | `cdx switch` | Switch account (interactive picker) |
 | `cdx switch --next` | Cycle to next account |
 | `cdx switch <id>` | Switch to specific account |

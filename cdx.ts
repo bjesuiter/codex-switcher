@@ -7,7 +7,7 @@ import {
   registerHelpCommand,
   registerLabelCommand,
   registerLoginCommand,
-  registerRefreshCommand,
+  registerReloginCommand,
   registerStatusCommand,
   registerSwitchCommand,
   registerUsageCommand,
@@ -38,7 +38,7 @@ export const createProgram = (
     .version(pkg.version, "-v, --version");
 
   registerLoginCommand(program, deps);
-  registerRefreshCommand(program);
+  registerReloginCommand(program);
   registerSwitchCommand(program);
   registerLabelCommand(program);
   registerStatusCommand(program);

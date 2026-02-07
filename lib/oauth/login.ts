@@ -12,7 +12,12 @@ import { startOAuthServer } from "./server";
 
 const openBrowser = (url: string): void => {
   const cmd = process.platform === "darwin" ? "open" : "xdg-open";
-  spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
+  try {
+    spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    p.log.warning(`Could not auto-open browser (${msg}).`);
+  }
 };
 
 const addAccountToConfig = async (
@@ -75,6 +80,7 @@ export const performRefresh = async (
 
   p.log.info("Opening browser for authentication...");
   openBrowser(flow.url);
+  p.log.message(`If your browser did not open, paste this URL:\n${flow.url}`);
 
   spinner.start("Waiting for authentication...");
 
@@ -146,6 +152,7 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
 
   p.log.info("Opening browser for authentication...");
   openBrowser(flow.url);
+  p.log.message(`If your browser did not open, paste this URL:\n${flow.url}`);
 
   spinner.start("Waiting for authentication...");
 

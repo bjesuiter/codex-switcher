@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { loadConfig } from "../config";
-import { handleRefreshAccount } from "../interactive";
+import { handleReloginAccount } from "../interactive";
 import { keychainPayloadExists, loadKeychainPayload } from "../keychain";
 import { performRefresh } from "../oauth/login";
 import { writeActiveAuthFilesIfCurrent } from "../refresh";
@@ -8,13 +8,13 @@ import { formatExpiry } from "../status";
 import { exitWithCommandError } from "./errors";
 import { writeUpdatedAuthSummary } from "./output";
 
-export const registerRefreshCommand = (program: Command): void => {
+export const registerReloginCommand = (program: Command): void => {
   program
-    .command("refresh")
+    .command("relogin")
     .description(
       "Re-authenticate an existing account with full OAuth login (no duplicate account)",
     )
-    .argument("[account]", "Account ID or label to refresh")
+    .argument("[account]", "Account ID or label to re-login")
     .action(async (account: string | undefined) => {
       try {
         if (account) {
@@ -47,7 +47,7 @@ export const registerRefreshCommand = (program: Command): void => {
 
           const result = await performRefresh(target.accountId, target.label);
           if (!result) {
-            process.stderr.write("Refresh failed.\n");
+            process.stderr.write("Re-login failed.\n");
             process.exit(1);
           }
 
@@ -58,7 +58,7 @@ export const registerRefreshCommand = (program: Command): void => {
           return;
         }
 
-        await handleRefreshAccount();
+        await handleReloginAccount();
       } catch (error) {
         exitWithCommandError(error);
       }
