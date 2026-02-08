@@ -6,6 +6,8 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
+__see full changelog here__: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
+
 ### 1.2.0
 
 #### Features
@@ -20,7 +22,7 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 - Add failure-path test coverage for invalid/unwritable `PI_CODING_AGENT_DIR` targets
 - Add realistic Pi auth fixture coverage for `openai-codex` auth.json shape
 
-see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
+
 
 ---
 
