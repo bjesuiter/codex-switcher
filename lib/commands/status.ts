@@ -6,7 +6,7 @@ import { exitWithCommandError } from "./errors";
 export const registerStatusCommand = (program: Command): void => {
   program
     .command("status")
-    .description("Show account status, token expiry, and auth file state")
+    .description("Show account status, token expiry, usage, and auth file state")
     .action(async () => {
       try {
         const status = await getStatus();
