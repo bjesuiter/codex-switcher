@@ -1,6 +1,6 @@
 # cdx
 
-CLI tool to switch between multiple OpenAI accounts for [OpenCode](https://opencode.ai).
+Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.openai.com/codex/cli/) and [opencode](https://opencode.ai/) auth between multiple openAI Plus and Pro accounts.
 
 ---
 
