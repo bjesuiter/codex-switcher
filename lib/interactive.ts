@@ -177,7 +177,9 @@ export const handleReloginAccount = async (): Promise<void> => {
   p.log.info(`Current token status for ${displayName}: ${expiryState}`);
 
   try {
-    const result = await performRefresh(accountId, account?.label);
+    const result = await performRefresh(accountId, account?.label, {
+      useSpinner: false,
+    });
     if (!result) {
       p.log.warning("Re-login was not completed.");
     } else {

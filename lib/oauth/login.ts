@@ -55,85 +55,123 @@ const addAccountToConfig = async (
 export const performRefresh = async (
   targetAccountId: string,
   label?: string,
+  options: { useSpinner?: boolean } = {},
 ): Promise<{ accountId: string } | null> => {
-  const displayName = label ?? targetAccountId;
-  p.log.step(`Re-authenticating account "${displayName}"...`);
-
-  let flow;
+  const keepAlive = setInterval(() => {}, 1000);
   try {
-    flow = await createAuthorizationFlow();
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    p.log.error(`Failed to create authorization flow: ${msg}`);
-    return null;
-  }
+    const displayName = label ?? targetAccountId;
+    p.log.step(`Re-authenticating account "${displayName}"...`);
+    const useSpinner = options.useSpinner ?? true;
 
-  const server = await startOAuthServer(flow.state);
+    let flow;
+    try {
+      flow = await createAuthorizationFlow();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      p.log.error(`Failed to create authorization flow: ${msg}`);
+      process.stderr.write(`Failed to create authorization flow: ${msg}\n`);
+      return null;
+    }
 
-  if (!server.ready) {
-    p.log.error("Failed to start local server on port 1455.");
-    p.log.info("Please ensure the port is not in use.");
-    return null;
-  }
+    const server = await startOAuthServer(flow.state);
 
-  const spinner = p.spinner();
+    if (!server.ready) {
+      p.log.error("Failed to start local server on port 1455.");
+      p.log.info("Please ensure the port is not in use.");
+      return null;
+    }
 
-  p.log.info("Opening browser for authentication...");
-  openBrowser(flow.url);
-  p.log.message(`If your browser did not open, paste this URL:\n${flow.url}`);
+    const spinner = useSpinner ? p.spinner() : null;
 
-  spinner.start("Waiting for authentication...");
+    p.log.info("Opening browser for authentication...");
+    openBrowser(flow.url);
+    p.log.message(`If your browser did not open, paste this URL:\n${flow.url}`);
 
-  const result = await server.waitForCode();
-  server.close();
+    if (spinner) {
+      spinner.start("Waiting for authentication...");
+    }
 
-  if (!result) {
-    spinner.stop("Authentication timed out or failed.");
-    return null;
-  }
+    const result = await server.waitForCode();
+    server.close();
 
-  spinner.message("Exchanging authorization code...");
+    if (!result) {
+      if (spinner) {
+        spinner.stop("Authentication timed out or failed.");
+      } else {
+        p.log.warning("Authentication timed out or failed.");
+      }
+      return null;
+    }
 
-  const tokenResult = await exchangeAuthorizationCode(
-    result.code,
-    flow.pkce.verifier,
-  );
+    if (spinner) {
+      spinner.message("Exchanging authorization code...");
+    } else {
+      p.log.message("Exchanging authorization code...");
+    }
 
-  if (tokenResult.type === "failed") {
-    spinner.stop("Failed to exchange authorization code.");
-    return null;
-  }
-
-  const newAccountId = extractAccountId(tokenResult.access);
-
-  if (!newAccountId) {
-    spinner.stop("Failed to extract account ID from token.");
-    return null;
-  }
-
-  if (newAccountId !== targetAccountId) {
-    spinner.stop("Authentication completed for a different account.");
-    throw new Error(
-      `Account mismatch: expected "${targetAccountId}" but got "${newAccountId}". Make sure you log in with the correct OpenAI account.`,
+    const tokenResult = await exchangeAuthorizationCode(
+      result.code,
+      flow.pkce.verifier,
     );
+
+    if (tokenResult.type === "failed") {
+      if (spinner) {
+        spinner.stop("Failed to exchange authorization code.");
+      } else {
+        p.log.error("Failed to exchange authorization code.");
+      }
+      return null;
+    }
+
+    const newAccountId = extractAccountId(tokenResult.access);
+
+    if (!newAccountId) {
+      if (spinner) {
+        spinner.stop("Failed to extract account ID from token.");
+      } else {
+        p.log.error("Failed to extract account ID from token.");
+      }
+      return null;
+    }
+
+    if (newAccountId !== targetAccountId) {
+      if (spinner) {
+        spinner.stop("Authentication completed for a different account.");
+      } else {
+        p.log.error("Authentication completed for a different account.");
+      }
+      throw new Error(
+        `Account mismatch: expected "${targetAccountId}" but got "${newAccountId}". Make sure you log in with the correct OpenAI account.`,
+      );
+    }
+
+    if (spinner) {
+      spinner.message("Updating credentials...");
+    } else {
+      p.log.message("Updating credentials...");
+    }
+
+    const payload: OAuthPayload = {
+      refresh: tokenResult.refresh,
+      access: tokenResult.access,
+      expires: tokenResult.expires,
+      accountId: newAccountId,
+      ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
+    };
+
+    saveKeychainPayload(newAccountId, payload);
+
+    if (spinner) {
+      spinner.stop("Credentials refreshed!");
+    } else {
+      p.log.success("Credentials refreshed!");
+    }
+    p.log.success(`Account "${displayName}" credentials updated in Keychain.`);
+
+    return { accountId: newAccountId };
+  } finally {
+    clearInterval(keepAlive);
   }
-
-  spinner.message("Updating credentials...");
-
-  const payload: OAuthPayload = {
-    refresh: tokenResult.refresh,
-    access: tokenResult.access,
-    expires: tokenResult.expires,
-    accountId: newAccountId,
-    ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
-  };
-
-  saveKeychainPayload(newAccountId, payload);
-
-  spinner.stop("Credentials refreshed!");
-  p.log.success(`Account "${displayName}" credentials updated in Keychain.`);
-
-  return { accountId: newAccountId };
 };
 
 export const performLogin = async (): Promise<{ accountId: string } | null> => {
