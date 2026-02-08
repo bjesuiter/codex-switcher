@@ -6,6 +6,10 @@
 
 - Rename `cdx refresh` command to `cdx relogin`
 
+### Fixes
+
+- Fix `cdx relogin` selector flow exiting early after account selection (now continues into OAuth browser login)
+
 ### Internal
 
 - Modularize CLI command wiring by moving command handlers into per-command modules under `lib/commands/`, keeping `cdx.ts` as a thin composition entrypoint
