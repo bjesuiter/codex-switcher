@@ -189,6 +189,7 @@ cdx migrate-secrets
 | `cdx status` | Show account status, token expiry, and usage |
 | `cdx migrate-secrets` | Migrate macOS legacy keychain entries to cross-keychain and switch config to `auto` |
 | `cdx doctor` | Show auth file paths/state and runtime capabilities |
+| `cdx doctor --check-keychain-acl` | Run additional macOS keychain trusted-app/ACL checks (slow) |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx help [command]` | Show help for all commands or one command |
@@ -224,6 +225,7 @@ source <(cdx complete bash)
 - `--secret-store <mode>` always overrides config for the current run.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
+- On macOS, `cdx doctor --check-keychain-acl` performs an additional trusted-app/ACL check for configured account secrets. This check can be slow.
 - Cross-keychain payload size policy:
   - Default max password length override is `16384`.
   - Optional override: set `CDX_CROSS_KEYCHAIN_MAX_PASSWORD_LENGTH=<integer-above-4096>`.

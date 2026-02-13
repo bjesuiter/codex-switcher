@@ -87,6 +87,17 @@ describe("cdx CLI", () => {
       expect(output).toContain("--secret-store");
     });
 
+    it("shows doctor-specific help for keychain ACL check flag", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "doctor", "--help"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(output).toContain("--check-keychain-acl");
+    });
+
     it("shows version with --version flag", async () => {
       const result = Bun.spawnSync({
         cmd: ["bun", "run", "cdx.ts", "--version"],

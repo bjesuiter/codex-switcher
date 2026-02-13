@@ -26,7 +26,11 @@ export const registerDoctorCommand = (program: Command): void => {
   program
     .command("doctor")
     .description("Show auth file paths and runtime capabilities")
-    .action(async () => {
+    .option(
+      "--check-keychain-acl",
+      "Run keychain trusted-app/ACL checks on macOS (can be slow)",
+    )
+    .action(async (options: { checkKeychainAcl?: boolean }) => {
       try {
         const status = await getStatus();
         const paths = getPaths();
@@ -77,7 +81,13 @@ export const registerDoctorCommand = (program: Command): void => {
           `  Browser launcher: ${status.capabilities.browserLauncher.label} — ${browserState}\n`,
         );
 
-        if (process.platform === "darwin") {
+        if (process.platform === "darwin" && !options.checkKeychainAcl) {
+          process.stdout.write(
+            "  You can check whether your process is treated as trusted process by keychain by calling cdx doctor with --check-keychain-acl flag. This may take around 30 to 60 seconds\n",
+          );
+        }
+
+        if (process.platform === "darwin" && options.checkKeychainAcl) {
           const secretStore = getSecretStoreAdapter();
           const accountsWithSecrets = status.accounts.filter((account) => account.secureStoreExists);
 
