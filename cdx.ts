@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import tab from "@bomb.sh/tab/commander";
 import { Command, InvalidArgumentError } from "commander";
 import pkg from "./package.json";
 import { loadConfiguredSecretStoreSelection } from "./lib/config";
@@ -53,6 +54,20 @@ const parseSecretStoreSelection = (value: string): SecretStoreSelection => {
   );
 };
 
+const getCompletionParseArgs = (argv: string[]): string[] | null => {
+  const completeIndex = argv.findIndex((arg) => arg === "complete");
+  if (completeIndex === -1) {
+    return null;
+  }
+
+  const separatorIndex = argv.findIndex((arg) => arg === "--");
+  if (separatorIndex === -1 || separatorIndex <= completeIndex) {
+    return null;
+  }
+
+  return argv.slice(separatorIndex + 1);
+};
+
 export const createProgram = (
   deps: LoginDeps = {},
 ): Command => {
@@ -101,6 +116,14 @@ export const createProgram = (
 
 const main = async () => {
   const program = createProgram();
+  const completion = tab(program);
+
+  const completionArgs = getCompletionParseArgs(process.argv);
+  if (completionArgs) {
+    completion.parse(completionArgs);
+    return;
+  }
+
   await program.parseAsync(process.argv);
 };
 

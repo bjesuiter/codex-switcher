@@ -180,10 +180,25 @@ cdx migrate-secrets
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx help [command]` | Show help for all commands or one command |
+| `cdx complete <shell>` | Generate shell completion script (`zsh`, `bash`, `fish`, `powershell`) |
 | `cdx version` | Show CLI version |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
 | `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
+
+### Shell completion
+
+Generate and source completion scripts:
+
+```bash
+# zsh
+source <(cdx complete zsh)
+
+# bash
+source <(cdx complete bash)
+```
+
+`cdx` also supports shell parse completion requests via `cdx complete -- ...`.
 
 ## How It Works
 

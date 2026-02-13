@@ -76,6 +76,31 @@ describe("cdx CLI", () => {
       expect(output).toBe(pkg.version);
     });
 
+    it("generates completion script for zsh", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "complete", "zsh"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("#compdef cdx");
+    });
+
+    it("responds to shell completion parse requests", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "complete", "--", "s"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("switch");
+      expect(output).toContain("status");
+    });
+
     it("rejects invalid --secret-store values", async () => {
       const result = Bun.spawnSync({
         cmd: ["bun", "run", "cdx.ts", "--secret-store", "invalid", "version"],
