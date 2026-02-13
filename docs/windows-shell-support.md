@@ -2,6 +2,13 @@
 
 This project validates Windows behavior in GitHub Actions via `.github/workflows/ci.yml`.
 
+## Trigger policy
+
+- Runs on `pull_request`
+- Manually triggerable via `workflow_dispatch`
+- Invoked automatically as a **pre-publish gate** from `.github/workflows/publish.yml`
+- Does **not** run on direct `push` events
+
 ## Shell policy
 
 - **PowerShell (`pwsh`)** is the official Windows shell for CI and release confidence.
