@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { Command, InvalidArgumentError } from "commander";
 import pkg from "./package.json";
+import { loadConfiguredSecretStoreSelection } from "./lib/config";
 import { exitWithCommandError } from "./lib/commands/errors";
 import {
   registerDefaultInteractiveAction,
@@ -8,6 +9,7 @@ import {
   registerHelpCommand,
   registerLabelCommand,
   registerLoginCommand,
+  registerMigrateSecretsCommand,
   registerReloginCommand,
   registerStatusCommand,
   registerSwitchCommand,
@@ -66,12 +68,14 @@ export const createProgram = (
       "--secret-store <mode>",
       "Select secret-store backend (auto|legacy-keychain)",
       parseSecretStoreSelection,
-      "auto",
     );
 
-  program.hook("preAction", (_thisCommand, actionCommand) => {
+  program.hook("preAction", async (_thisCommand, actionCommand) => {
     const options = actionCommand.optsWithGlobals() as { secretStore?: SecretStoreSelection };
-    const selection = options.secretStore ?? "auto";
+    const configuredSelection = options.secretStore
+      ? undefined
+      : await loadConfiguredSecretStoreSelection();
+    const selection = options.secretStore ?? configuredSelection ?? "auto";
     const adapter = createSecretStoreAdapterFromSelection(selection);
     setSecretStoreAdapter(adapter);
   });
@@ -84,6 +88,7 @@ export const createProgram = (
   registerReloginCommand(program);
   registerSwitchCommand(program);
   registerLabelCommand(program);
+  registerMigrateSecretsCommand(program);
   registerStatusCommand(program);
   registerDoctorCommand(program);
   registerUsageCommand(program);

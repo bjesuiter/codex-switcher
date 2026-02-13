@@ -1,3 +1,5 @@
+export type SecretStoreSelection = "auto" | "legacy-keychain";
+
 export type AccountRecord = {
   accountId: string;
   keychainService: string;
@@ -7,6 +9,7 @@ export type AccountRecord = {
 export type Config = {
   current: number;
   accounts: AccountRecord[];
+  secretStore?: SecretStoreSelection;
 };
 
 export type OAuthPayload = {

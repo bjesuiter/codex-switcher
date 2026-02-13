@@ -7,7 +7,7 @@ import {
   loadKeychainPayload,
   saveKeychainPayload,
 } from "../keychain";
-import type { OAuthPayload } from "../types";
+import type { OAuthPayload, SecretStoreSelection } from "../types";
 import {
   deleteLinuxCrossKeychainPayload,
   getLinuxCrossKeychainService,
@@ -30,7 +30,7 @@ import {
   windowsCrossKeychainPayloadExists,
 } from "./windows-cross-keychain";
 
-export type SecretStoreSelection = "auto" | "legacy-keychain";
+export type { SecretStoreSelection } from "../types";
 
 export type SecretStoreCapability = {
   available: boolean;

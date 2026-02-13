@@ -155,6 +155,12 @@ cdx --secret-store legacy-keychain switch
 cdx --secret-store legacy-keychain status
 ```
 
+Migrate legacy macOS keychain entries to cross-keychain (`auto`) and update config:
+
+```bash
+cdx migrate-secrets
+```
+
 ## Commands
 
 | Command | Description |
@@ -169,6 +175,7 @@ cdx --secret-store legacy-keychain status
 | `cdx label` | Label an account (interactive) |
 | `cdx label <account> <label>` | Assign label directly |
 | `cdx status` | Show account status, token expiry, and usage |
+| `cdx migrate-secrets` | Migrate macOS legacy keychain entries to cross-keychain and switch config to `auto` |
 | `cdx doctor` | Show auth file paths/state and runtime capabilities |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
@@ -176,7 +183,7 @@ cdx --secret-store legacy-keychain status
 | `cdx version` | Show CLI version |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
-| `cdx --secret-store legacy-keychain <command>` | Use legacy macOS keychain backend for that run |
+| `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
 
 ## How It Works
 
@@ -185,8 +192,9 @@ cdx --secret-store legacy-keychain status
 - **macOS:** macOS Keychain
 - **Windows:** Windows Credential Manager
 - **Linux:** Secret Service/keyring
-- Default backend selection is automatic (`--secret-store auto`).
-- On macOS, you can force the legacy backend for a single run with `--secret-store legacy-keychain`.
+- Default backend selection is automatic (`auto`).
+- You can persist a preferred backend in `accounts.json` via optional `"secretStore"` (`"auto"` or `"legacy-keychain"`).
+- `--secret-store <mode>` always overrides config for the current run.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
 
@@ -243,6 +251,7 @@ And create the accounts list manually:
 ```json
 {
   "current": 0,
+  "secretStore": "auto",
   "accounts": [
     { "accountId": "ACCOUNT_ID", "keychainService": "cdx-openai-ACCOUNT_ID" }
   ]
