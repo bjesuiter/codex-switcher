@@ -7,6 +7,7 @@
 - Add **beta Windows/Linux support** for account switching workflows, including platform-specific default paths for config/auth files.
 - Add secure credential storage adapters for Windows Credential Manager and Linux Secret Service/keyring (via `cross-keychain`).
 - Improve `cdx status` UX by rendering account/token info first, then loading usage for all accounts in parallel with a spinner and per-account failure reporting.
+- Add `cdx doctor` command to show auth file state with explicit paths and runtime capability diagnostics.
 - Require explicit one-time consent before using fallback secure-store backends, with non-interactive override via `CDX_ALLOW_SECURE_STORE_FALLBACK=1`.
 
 ### Fixes

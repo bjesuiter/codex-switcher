@@ -15,7 +15,12 @@ on:
         type: boolean
 
 jobs:
+  prepublish-ci:
+    name: Pre-publish CI
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: prepublish-ci
     runs-on: ubuntu-latest
     permissions:
       contents: read
