@@ -14,9 +14,9 @@ describe("createRuntimeSecretStoreAdapter", () => {
     expect(adapter.getCapability().available).toBe(false);
   });
 
-  it("uses unsupported adapter for win32", () => {
+  it("selects Windows Credential Manager adapter for win32", () => {
     const adapter = createRuntimeSecretStoreAdapter("win32");
-    expect(adapter.id).toBe("unsupported");
-    expect(adapter.getCapability().available).toBe(false);
+    expect(adapter.id).toBe("windows-credential-manager");
+    expect(adapter.getCapability().available).toBe(true);
   });
 });

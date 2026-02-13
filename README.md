@@ -41,7 +41,7 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 
 ## Requirements
 
-- macOS (uses Keychain via the `security` command)
+- macOS (uses Keychain via the `security` command) **or** Windows (uses Windows Credential Manager via PowerShell)
 - [Bun](https://bun.sh) runtime
 
 ## Install
@@ -60,7 +60,7 @@ This exposes the `cdx` binary globally.
 cdx login
 ```
 
-Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in macOS Keychain.
+Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in the OS secure store (macOS Keychain or Windows Credential Manager).
 
 ### Switch between accounts
 
@@ -134,8 +134,10 @@ Running `cdx` without arguments opens an interactive menu to:
 
 ## How It Works
 
-- OAuth credentials are stored securely in macOS Keychain
-- Account list is stored in `~/.config/cdx/accounts.json`
+- OAuth credentials are stored securely in macOS Keychain (macOS) or Windows Credential Manager (Windows)
+- Account list is stored in:
+  - macOS/Linux: `~/.config/cdx/accounts.json`
+  - Windows: `%APPDATA%\\cdx\\accounts.json`
 - Active account credentials are written to:
   - `~/.local/share/opencode/auth.json`
   - `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
@@ -162,7 +164,7 @@ bun link
 
 ### Manual Configuration (Advanced)
 
-You can also manually add accounts to Keychain:
+You can also manually add accounts to Keychain (macOS only):
 
 ```bash
 security add-generic-password -a "ACCOUNT_ID" -s "cdx-openai-ACCOUNT_ID" -w '{"refresh":"REFRESH","access":"ACCESS","expires":1234567890,"accountId":"ACCOUNT_ID"}' -U

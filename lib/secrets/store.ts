@@ -7,6 +7,14 @@ import {
   saveKeychainPayload,
 } from "../keychain";
 import type { OAuthPayload } from "../types";
+import {
+  deleteWindowsCredentialPayload,
+  getWindowsCredentialService,
+  listWindowsCredentialAccounts,
+  loadWindowsCredentialPayload,
+  saveWindowsCredentialPayload,
+  windowsCredentialPayloadExists,
+} from "../windows-credential";
 
 export type SecretStoreCapability = {
   available: boolean;
@@ -28,7 +36,7 @@ export type SecretStoreAdapter = {
 const unsupportedError = (platform: NodeJS.Platform): Error =>
   new Error(
     `No default secret store adapter configured for platform '${platform}'. ` +
-      "Only macOS Keychain is wired by default right now.",
+      "Only macOS Keychain and Windows Credential Manager are wired by default right now.",
   );
 
 const createMacOSKeychainAdapter = (): SecretStoreAdapter => ({
@@ -40,6 +48,18 @@ const createMacOSKeychainAdapter = (): SecretStoreAdapter => ({
   delete: deleteKeychainPayload,
   exists: keychainPayloadExists,
   listAccountIds: listKeychainAccounts,
+  getCapability: () => ({ available: true }),
+});
+
+const createWindowsCredentialManagerAdapter = (): SecretStoreAdapter => ({
+  id: "windows-credential-manager",
+  label: "Windows Credential Manager",
+  getServiceName: getWindowsCredentialService,
+  save: saveWindowsCredentialPayload,
+  load: loadWindowsCredentialPayload,
+  delete: deleteWindowsCredentialPayload,
+  exists: windowsCredentialPayloadExists,
+  listAccountIds: listWindowsCredentialAccounts,
   getCapability: () => ({ available: true }),
 });
 
@@ -62,8 +82,7 @@ const createUnsupportedAdapter = (
   listAccountIds: () => [],
   getCapability: () => ({
     available: false,
-    reason:
-      "No default secure-store adapter available yet (planned via shared adapter infrastructure).",
+    reason: "No default secure-store adapter available for this platform.",
   }),
 });
 
@@ -73,6 +92,11 @@ export const createRuntimeSecretStoreAdapter = (
   if (platform === "darwin") {
     return createMacOSKeychainAdapter();
   }
+
+  if (platform === "win32") {
+    return createWindowsCredentialManagerAdapter();
+  }
+
   return createUnsupportedAdapter(platform);
 };
 
