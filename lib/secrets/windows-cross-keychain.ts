@@ -8,12 +8,6 @@ import {
 import type { OAuthPayload } from "../types";
 import { getCrossKeychainBackendOverrides } from "./cross-keychain-overrides";
 import { ensureFallbackConsent } from "./fallback-consent";
-import {
-  createWindowsChunkedPayloadPointer,
-  MAX_WINDOWS_PASSWORD_CHUNK_LENGTH,
-  parseWindowsChunkedPayloadPointer,
-  splitWindowsPayloadIntoChunks,
-} from "./windows-chunked-payload";
 
 const SERVICE_PREFIX = "cdx-openai-";
 const WINDOWS_FALLBACK_SCOPE = "win32:cross-keychain:windows";
@@ -85,52 +79,6 @@ const ensureWindowsBackend = async (
 export const getWindowsCrossKeychainService = (accountId: string): string =>
   `${SERVICE_PREFIX}${accountId}`;
 
-const getChunkAccountName = (accountId: string, index: number): string =>
-  `${accountId}__chunk_${index}`;
-
-const deleteChunkEntries = async (
-  service: string,
-  accountId: string,
-  chunks: number,
-  startIndex = 0,
-): Promise<void> => {
-  for (let index = startIndex; index < chunks; index += 1) {
-    try {
-      await deletePassword(service, getChunkAccountName(accountId, index));
-    } catch {
-      // Best effort cleanup.
-    }
-  }
-};
-
-const readStoredPayloadRaw = async (
-  service: string,
-  accountId: string,
-): Promise<string | null> => {
-  const raw = await getPassword(service, accountId);
-  if (raw === null) {
-    return null;
-  }
-
-  const pointer = parseWindowsChunkedPayloadPointer(raw);
-  if (!pointer) {
-    return raw;
-  }
-
-  let combined = "";
-  for (let index = 0; index < pointer.chunks; index += 1) {
-    const chunk = await getPassword(service, getChunkAccountName(accountId, index));
-    if (chunk === null) {
-      throw new Error(
-        `Stored credential payload for account ${accountId} is missing chunk ${index + 1}/${pointer.chunks}.`,
-      );
-    }
-    combined += chunk;
-  }
-
-  return combined;
-};
-
 const parsePayload = (accountId: string, raw: string): OAuthPayload => {
   let parsed: OAuthPayload;
   try {
@@ -161,34 +109,7 @@ export const saveWindowsCrossKeychainPayload = async (
 ): Promise<void> => withService(
   accountId,
   async (service) => {
-    const serialized = JSON.stringify(payload);
-    const previousRaw = await getPassword(service, accountId);
-    const previousPointer = previousRaw
-      ? parseWindowsChunkedPayloadPointer(previousRaw)
-      : null;
-
-    if (serialized.length <= MAX_WINDOWS_PASSWORD_CHUNK_LENGTH) {
-      await setPassword(service, accountId, serialized);
-      if (previousPointer) {
-        await deleteChunkEntries(service, accountId, previousPointer.chunks);
-      }
-      return;
-    }
-
-    const chunks = splitWindowsPayloadIntoChunks(serialized);
-    for (let index = 0; index < chunks.length; index += 1) {
-      await setPassword(service, getChunkAccountName(accountId, index), chunks[index]);
-    }
-
-    await setPassword(
-      service,
-      accountId,
-      JSON.stringify(createWindowsChunkedPayloadPointer(chunks.length)),
-    );
-
-    if (previousPointer && previousPointer.chunks > chunks.length) {
-      await deleteChunkEntries(service, accountId, previousPointer.chunks, chunks.length);
-    }
+    await setPassword(service, accountId, JSON.stringify(payload));
   },
   { forWrite: true },
 );
@@ -196,10 +117,7 @@ export const saveWindowsCrossKeychainPayload = async (
 export const loadWindowsCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
-  const raw = await withService(
-    accountId,
-    (service) => readStoredPayloadRaw(service, accountId),
-  );
+  const raw = await withService(accountId, (service) => getPassword(service, accountId));
 
   if (raw === null) {
     throw new Error(`No stored credentials found for account ${accountId}.`);
@@ -210,14 +128,12 @@ export const loadWindowsCrossKeychainPayload = async (
 
 export const deleteWindowsCrossKeychainPayload = async (
   accountId: string,
-): Promise<void> => withService(accountId, async (service) => {
-  const raw = await getPassword(service, accountId);
-  const pointer = raw ? parseWindowsChunkedPayloadPointer(raw) : null;
-  if (pointer) {
-    await deleteChunkEntries(service, accountId, pointer.chunks);
-  }
-  await deletePassword(service, accountId);
-});
+): Promise<void> => withService(
+  accountId,
+  async (service) => {
+    await deletePassword(service, accountId);
+  },
+);
 
 export const windowsCrossKeychainPayloadExists = async (
   accountId: string,

@@ -42,7 +42,7 @@ describe("windows cross-keychain integration", () => {
   it.skipIf(!isWindows)(
     "stores and loads oversized payloads through Windows Credential Manager",
     async () => {
-      const accountId = makeTestAccountId("cdx-test-chunked");
+      const accountId = makeTestAccountId("cdx-test-large");
       createdAccountIds.push(accountId);
 
       const payload: OAuthPayload = {
@@ -70,7 +70,7 @@ describe("windows cross-keychain integration", () => {
   );
 
   it.skipIf(!isWindows)(
-    "deletes chunked payload credentials from Windows Credential Manager",
+    "deletes oversized payload credentials from Windows Credential Manager",
     async () => {
       const accountId = makeTestAccountId("cdx-test-delete");
       createdAccountIds.push(accountId);
