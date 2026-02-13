@@ -1,11 +1,11 @@
 ---
 # codex-switcher-tqs0
 title: 'Windows: saving credentials fails when password UTF-16 length exceeds platform limit'
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-02-13T23:29:53Z
-updated_at: 2026-02-13T23:38:32Z
+updated_at: 2026-02-13T23:38:41Z
 parent: codex-switcher-i5g5
 ---
 
