@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-02-13T12:59:25Z
-updated_at: 2026-02-13T13:09:28Z
+updated_at: 2026-02-13T13:12:55Z
 parent: codex-switcher-zky5
 ---
 
@@ -30,3 +30,7 @@ Open questions:
 
 - Windows shell support decision: **official** support for PowerShell; **best-effort** support for CMD and Git Bash.
 - Constraint: development happens on macOS, so Windows test execution should run in CI (GitHub Actions suggested).
+
+
+- Linux scope decision: support Linux desktop environments with available keyring/Secret Service; broad distro support is acceptable when compatible keyring is present.
+- WSL/headless are out of scope for now; require future fnox-backed secret adapter support.
