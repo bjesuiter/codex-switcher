@@ -6,20 +6,25 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.3.0
+### 1.4.0
 
 #### Features
 
-- Rename `cdx refresh` command to `cdx relogin`
+- Add **beta Windows/Linux support** with platform-specific defaults for config/auth paths.
+- Add secure-store adapters via `cross-keychain` for Windows Credential Manager and Linux Secret Service/keyring.
+- Add `cdx doctor` to display auth file state with explicit paths plus runtime capability diagnostics.
+- Improve `cdx status` output flow: account/token details first, usage fetch with spinner after.
+- Require explicit one-time consent before using secure-store fallback backends (`CDX_ALLOW_SECURE_STORE_FALLBACK=1` override).
 
 #### Fixes
 
-- Fix `cdx relogin` selector flow exiting early after account selection (now continues into OAuth browser login)
+- Use platform-neutral secure-store wording in output where macOS-specific keychain wording was misleading.
 
 #### Internal
 
-- Modularize CLI command wiring by moving command handlers into per-command modules under `lib/commands/`, keeping `cdx.ts` as a thin composition entrypoint
-- Update package dependencies and lockfile (`@clack/prompts`, `commander`, `tsdown`, `@types/bun`, `@types/node`)
+- Add shared platform abstraction layer (`lib/platform/*`) for paths, browser launcher, and runtime capability detection.
+- Expand platform/path/browser/secret-store test coverage.
+- Update dependencies and lockfile for `cross-keychain`.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
