@@ -22,7 +22,9 @@ import { runInteractiveMode } from "./lib/interactive";
 import {
   createSecretStoreAdapterFromSelection,
   resetSecretStoreAdapter,
+  resolveMacOSCrossKeychainBackendId,
   setSecretStoreAdapter,
+  type MacOSCrossKeychainBackendId,
   type SecretStoreSelection,
 } from "./lib/secrets/store";
 
@@ -35,7 +37,9 @@ export {
   createSecretStoreAdapterFromSelection,
   getSecretStoreAdapter,
   resetSecretStoreAdapter,
+  resolveMacOSCrossKeychainBackendId,
   setSecretStoreAdapter,
+  type MacOSCrossKeychainBackendId,
   type SecretStoreAdapter,
   type SecretStoreSelection,
 } from "./lib/secrets/store";
@@ -68,6 +72,45 @@ const getCompletionParseArgs = (argv: string[]): string[] | null => {
   return argv.slice(separatorIndex + 1);
 };
 
+export const getMacOSKeychainPromptWarning = (
+  selection: SecretStoreSelection,
+  platform: NodeJS.Platform = process.platform,
+  backendId: MacOSCrossKeychainBackendId | null = null,
+): string | null => {
+  if (platform !== "darwin") {
+    return null;
+  }
+
+  if (selection === "legacy-keychain") {
+    return "⚠ macOS keychain is using the legacy security CLI backend. Touch ID may not be offered for keychain prompts.";
+  }
+
+  if (selection === "auto" && backendId === "macos") {
+    return "⚠ macOS keychain is using the cross-keychain CLI fallback (`security`). Touch ID may not be offered for keychain prompts.";
+  }
+
+  return null;
+};
+
+const maybeWarnAboutMacOSKeychainPromptMode = async (
+  selection: SecretStoreSelection,
+): Promise<void> => {
+  let backendId: MacOSCrossKeychainBackendId | null = null;
+
+  if (selection === "auto" && process.platform === "darwin") {
+    try {
+      backendId = await resolveMacOSCrossKeychainBackendId();
+    } catch {
+      backendId = null;
+    }
+  }
+
+  const warning = getMacOSKeychainPromptWarning(selection, process.platform, backendId);
+  if (warning) {
+    process.stderr.write(`${warning}\n`);
+  }
+};
+
 export const createProgram = (
   deps: LoginDeps = {},
 ): Command => {
@@ -93,6 +136,7 @@ export const createProgram = (
     const selection = options.secretStore ?? configuredSelection ?? "auto";
     const adapter = createSecretStoreAdapterFromSelection(selection);
     setSecretStoreAdapter(adapter);
+    await maybeWarnAboutMacOSKeychainPromptMode(selection);
   });
 
   program.hook("postAction", () => {

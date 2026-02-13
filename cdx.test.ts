@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import pkg from "./package.json";
-import { createProgram } from "./cdx";
+import { createProgram, getMacOSKeychainPromptWarning } from "./cdx";
 
 describe("cdx CLI", () => {
   describe("createProgram", () => {
@@ -44,6 +44,28 @@ describe("cdx CLI", () => {
       expect(program.description()).toBe(
         "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
       );
+    });
+  });
+
+  describe("touch id warning helper", () => {
+    it("returns no warning on non-macOS", () => {
+      expect(getMacOSKeychainPromptWarning("auto", "linux", null)).toBeNull();
+    });
+
+    it("warns for legacy keychain on macOS", () => {
+      expect(getMacOSKeychainPromptWarning("legacy-keychain", "darwin", null)).toContain(
+        "legacy security CLI",
+      );
+    });
+
+    it("warns for macOS CLI fallback backend", () => {
+      expect(getMacOSKeychainPromptWarning("auto", "darwin", "macos")).toContain(
+        "CLI fallback",
+      );
+    });
+
+    it("returns no warning for native macOS backend", () => {
+      expect(getMacOSKeychainPromptWarning("auto", "darwin", "native-macos")).toBeNull();
     });
   });
 

@@ -13,6 +13,8 @@ const MACOS_FALLBACK_SCOPE = "darwin:cross-keychain:macos";
 
 type BackendId = "native-macos" | "macos";
 
+export type MacOSCrossKeychainBackendId = BackendId;
+
 let backendInitPromise: Promise<void> | null = null;
 let selectedBackend: BackendId | null = null;
 
@@ -73,6 +75,16 @@ const ensureMacOSBackend = async (
         "Compared to native bindings, secrets may be more exposed to process inspection/logging while helper commands run.",
     );
   }
+};
+
+export const resolveMacOSCrossKeychainBackendId = async (): Promise<MacOSCrossKeychainBackendId> => {
+  await ensureMacOSBackend();
+
+  if (!selectedBackend) {
+    throw new Error("Unable to initialize macOS keychain backend via cross-keychain.");
+  }
+
+  return selectedBackend;
 };
 
 export const getMacOSCrossKeychainService = (accountId: string): string =>

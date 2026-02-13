@@ -20,7 +20,9 @@ import {
   getMacOSCrossKeychainService,
   loadMacOSCrossKeychainPayload,
   macosCrossKeychainPayloadExists,
+  resolveMacOSCrossKeychainBackendId as resolveCrossKeychainMacOSBackendId,
   saveMacOSCrossKeychainPayload,
+  type MacOSCrossKeychainBackendId,
 } from "./macos-cross-keychain";
 import {
   deleteWindowsCrossKeychainPayload,
@@ -31,6 +33,7 @@ import {
 } from "./windows-cross-keychain";
 
 export type { SecretStoreSelection } from "../types";
+export type { MacOSCrossKeychainBackendId };
 
 export type SecretStoreCapability = {
   available: boolean;
@@ -348,6 +351,16 @@ export const createSecretStoreAdapterFromSelection = (
   }
 
   return createRuntimeSecretStoreAdapter(platform);
+};
+
+export const resolveMacOSCrossKeychainBackendId = async (
+  platform: NodeJS.Platform = process.platform,
+): Promise<MacOSCrossKeychainBackendId | null> => {
+  if (platform !== "darwin") {
+    return null;
+  }
+
+  return resolveCrossKeychainMacOSBackendId();
 };
 
 let currentSecretStoreAdapter: SecretStoreAdapter = withSecretStoreCache(
