@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-02-13T12:59:25Z
-updated_at: 2026-02-13T13:01:00Z
+updated_at: 2026-02-13T13:09:28Z
 parent: codex-switcher-zky5
 ---
 
@@ -17,3 +17,16 @@ Open questions:
 - Secret storage policy: strict OS keyring only, or encrypted file fallback allowed?
 - Non-GUI/headless behavior: required or optional?
 - Packaging expectations per platform (npm global, standalone binary, both)?
+
+## User Answers
+
+### 2026-02-13
+- Windows: target both Windows 10 and Windows 11.
+- Concern acknowledged: potential differences in secret APIs vs macOS; still wants cross-platform support with proper path handling.
+
+
+- User requirement: implement a secrets adapter interface pattern so additional stores can be added later (e.g. fnox, 1Password, Bitwarden).
+
+
+- Windows shell support decision: **official** support for PowerShell; **best-effort** support for CMD and Git Bash.
+- Constraint: development happens on macOS, so Windows test execution should run in CI (GitHub Actions suggested).
