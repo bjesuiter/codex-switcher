@@ -6,25 +6,27 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.4.0
+### 1.5.0
 
 #### Features
 
-- Add **beta Windows/Linux support** with platform-specific defaults for config/auth paths.
-- Add secure-store adapters via `cross-keychain` for Windows Credential Manager and Linux Secret Service/keyring.
-- Add `cdx doctor` to display auth file state with explicit paths plus runtime capability diagnostics.
-- Improve `cdx status` output flow: account/token details first, usage fetch with spinner after.
-- Require explicit one-time consent before using secure-store fallback backends (`CDX_ALLOW_SECURE_STORE_FALLBACK=1` override).
+- Add shell completion support via `cdx complete <shell>` (with parse-completion handling for shell integrations).
+- Add configurable secret-store selection with `--secret-store <mode>` (`auto` or `legacy-keychain`) plus persisted config support.
+- Switch macOS `auto` secret storage to cross-keychain backend selection (prefers native backend, falls back when needed).
+- Add `cdx migrate-secrets` to migrate legacy macOS keychain entries to cross-keychain and update config.
+- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to verify trusted runtime access.
+- Add doctor/runtime warnings when macOS keychain access is using legacy/CLI fallback paths where Touch ID prompts may not be offered.
+- Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
 
 #### Fixes
 
-- Use platform-neutral secure-store wording in output where macOS-specific keychain wording was misleading.
+- Keep `cdx doctor` fast by making keychain ACL checks opt-in and improving output with clearer guidance and progress feedback.
+- Remove Windows credential payload chunking now that larger payloads are supported directly in the secure store backend.
 
 #### Internal
 
-- Add shared platform abstraction layer (`lib/platform/*`) for paths, browser launcher, and runtime capability detection.
-- Expand platform/path/browser/secret-store test coverage.
-- Update dependencies and lockfile for `cross-keychain`.
+- Temporarily switch keyring dependency from `cross-keychain` to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is available.
+- Add Windows CI coverage including shell smoke checks and expanded secure-store integration tests (including Windows CRUD coverage).
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
@@ -148,6 +150,19 @@ Interactive mode:
 cdx
 ```
 
+Use the legacy macOS keychain implementation (if needed):
+
+```bash
+cdx --secret-store legacy-keychain switch
+cdx --secret-store legacy-keychain status
+```
+
+Migrate legacy macOS keychain entries to cross-keychain (`auto`) and update config:
+
+```bash
+cdx migrate-secrets
+```
+
 ## Commands
 
 | Command | Description |
@@ -162,13 +177,31 @@ cdx
 | `cdx label` | Label an account (interactive) |
 | `cdx label <account> <label>` | Assign label directly |
 | `cdx status` | Show account status, token expiry, and usage |
+| `cdx migrate-secrets` | Migrate macOS legacy keychain entries to cross-keychain and switch config to `auto` |
 | `cdx doctor` | Show auth file paths/state and runtime capabilities |
+| `cdx doctor --check-keychain-acl` | Run additional macOS keychain trusted-app/ACL checks (slow) |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx help [command]` | Show help for all commands or one command |
+| `cdx complete <shell>` | Generate shell completion script (`zsh`, `bash`, `fish`, `powershell`) |
 | `cdx version` | Show CLI version |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
+| `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
+
+### Shell completion
+
+Generate and source completion scripts:
+
+```bash
+# zsh
+source <(cdx complete zsh)
+
+# bash
+source <(cdx complete bash)
+```
+
+`cdx` also supports shell parse completion requests via `cdx complete -- ...`.
 
 ## How It Works
 
@@ -177,8 +210,16 @@ cdx
 - **macOS:** macOS Keychain
 - **Windows:** Windows Credential Manager
 - **Linux:** Secret Service/keyring
+- Default backend selection is automatic (`auto`).
+- You can persist a preferred backend in `accounts.json` via optional `"secretStore"` (`"auto"` or `"legacy-keychain"`).
+- `--secret-store <mode>` always overrides config for the current run.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
+- On macOS, `cdx doctor --check-keychain-acl` performs an additional trusted-app/ACL check for configured account secrets. This check can be slow.
+- Cross-keychain payload size policy:
+  - Default max password length override is `16384`.
+  - Optional override: set `CDX_CROSS_KEYCHAIN_MAX_PASSWORD_LENGTH=<integer-above-4096>`.
+  - This currently relies on `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is released.
 
 ### Account list path
 
@@ -233,6 +274,7 @@ And create the accounts list manually:
 ```json
 {
   "current": 0,
+  "secretStore": "auto",
   "accounts": [
     { "accountId": "ACCOUNT_ID", "keychainService": "cdx-openai-ACCOUNT_ID" }
   ]

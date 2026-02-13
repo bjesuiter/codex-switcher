@@ -4,6 +4,12 @@
 
 - `docs/codexbar/` — Local clone of [steipete/CodexBar](https://github.com/steipete/CodexBar) for reference on OpenAI Plus/Pro usage tracking via the undocumented usage API.
 
+## Fish completion script maintenance
+
+- Generated fish completion file path: `~/.config/fish/completions/cdx.fish`
+- Whenever CLI commands or arguments/options change, regenerate and update this file yourself:
+  - From repo root: `cdx complete fish > ~/.config/fish/completions/cdx.fish`
+
 ## Releasing a new version
 
 1. Increase version in `package.json`

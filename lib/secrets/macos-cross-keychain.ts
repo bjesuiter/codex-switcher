@@ -10,9 +10,11 @@ import { getCrossKeychainBackendOverrides } from "./cross-keychain-overrides";
 import { ensureFallbackConsent } from "./fallback-consent";
 
 const SERVICE_PREFIX = "cdx-openai-";
-const LINUX_FALLBACK_SCOPE = "linux:cross-keychain:secret-service";
+const MACOS_FALLBACK_SCOPE = "darwin:cross-keychain:macos";
 
-type BackendId = "native-linux" | "secret-service";
+type BackendId = "native-macos" | "macos";
+
+export type MacOSCrossKeychainBackendId = BackendId;
 
 let backendInitPromise: Promise<void> | null = null;
 let selectedBackend: BackendId | null = null;
@@ -30,26 +32,26 @@ const selectBackend = async (): Promise<BackendId> => {
   const backends = await listBackends();
   const available = new Set(backends.map((backend) => backend.id));
 
-  if (available.has("native-linux") && (await tryUseBackend("native-linux"))) {
-    return "native-linux";
+  if (available.has("native-macos") && (await tryUseBackend("native-macos"))) {
+    return "native-macos";
   }
 
-  if (available.has("secret-service") && (await tryUseBackend("secret-service"))) {
-    return "secret-service";
+  if (available.has("macos") && (await tryUseBackend("macos"))) {
+    return "macos";
   }
 
-  if (await tryUseBackend("native-linux")) {
-    return "native-linux";
+  if (await tryUseBackend("native-macos")) {
+    return "native-macos";
   }
 
-  if (await tryUseBackend("secret-service")) {
-    return "secret-service";
+  if (await tryUseBackend("macos")) {
+    return "macos";
   }
 
-  throw new Error("Unable to initialize Linux secure-store backend via cross-keychain.");
+  throw new Error("Unable to initialize macOS keychain backend via cross-keychain.");
 };
 
-const ensureLinuxBackend = async (
+const ensureMacOSBackend = async (
   options: { forWrite?: boolean } = {},
 ): Promise<void> => {
   if (!backendInitPromise) {
@@ -63,20 +65,30 @@ const ensureLinuxBackend = async (
   } catch {
     backendInitPromise = null;
     selectedBackend = null;
-    throw new Error("Unable to initialize Linux secure-store backend via cross-keychain.");
+    throw new Error("Unable to initialize macOS keychain backend via cross-keychain.");
   }
 
-  if (options.forWrite && selectedBackend === "secret-service") {
+  if (options.forWrite && selectedBackend === "macos") {
     await ensureFallbackConsent(
-      LINUX_FALLBACK_SCOPE,
-      "⚠ Security warning: only the cross-keychain Linux fallback backend is available.\n" +
-        "This path relies on shell-based `secret-tool` operations for Secret Service access.\n" +
+      MACOS_FALLBACK_SCOPE,
+      "⚠ Security warning: only the cross-keychain macOS fallback backend is available.\n" +
+        "This path uses the `security` command to access Keychain.\n" +
         "Compared to native bindings, secrets may be more exposed to process inspection/logging while helper commands run.",
     );
   }
 };
 
-export const getLinuxCrossKeychainService = (accountId: string): string =>
+export const resolveMacOSCrossKeychainBackendId = async (): Promise<MacOSCrossKeychainBackendId> => {
+  await ensureMacOSBackend();
+
+  if (!selectedBackend) {
+    throw new Error("Unable to initialize macOS keychain backend via cross-keychain.");
+  }
+
+  return selectedBackend;
+};
+
+export const getMacOSCrossKeychainService = (accountId: string): string =>
   `${SERVICE_PREFIX}${accountId}`;
 
 const parsePayload = (accountId: string, raw: string): OAuthPayload => {
@@ -99,11 +111,11 @@ const withService = async <T>(
   run: (service: string) => Promise<T>,
   options: { forWrite?: boolean } = {},
 ): Promise<T> => {
-  await ensureLinuxBackend(options);
-  return run(getLinuxCrossKeychainService(accountId));
+  await ensureMacOSBackend(options);
+  return run(getMacOSCrossKeychainService(accountId));
 };
 
-export const saveLinuxCrossKeychainPayload = async (
+export const saveMacOSCrossKeychainPayload = async (
   accountId: string,
   payload: OAuthPayload,
 ): Promise<void> => withService(
@@ -112,7 +124,7 @@ export const saveLinuxCrossKeychainPayload = async (
   { forWrite: true },
 );
 
-export const loadLinuxCrossKeychainPayload = async (
+export const loadMacOSCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
   const raw = await withService(accountId, (service) => getPassword(service, accountId));
@@ -124,11 +136,11 @@ export const loadLinuxCrossKeychainPayload = async (
   return parsePayload(accountId, raw);
 };
 
-export const deleteLinuxCrossKeychainPayload = async (
+export const deleteMacOSCrossKeychainPayload = async (
   accountId: string,
 ): Promise<void> => withService(accountId, (service) => deletePassword(service, accountId));
 
-export const linuxCrossKeychainPayloadExists = async (
+export const macosCrossKeychainPayloadExists = async (
   accountId: string,
 ): Promise<boolean> => withService(
   accountId,

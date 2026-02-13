@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+## 1.5.0
+
+### Features
+
+- Add shell completion support via `cdx complete <shell>` (with parse-completion handling for shell integrations).
+- Add configurable secret-store selection with `--secret-store <mode>` (`auto` or `legacy-keychain`) plus persisted config support.
+- Switch macOS `auto` secret storage to cross-keychain backend selection (prefers native backend, falls back when needed).
+- Add `cdx migrate-secrets` to migrate legacy macOS keychain entries to cross-keychain and update config.
+- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to verify trusted runtime access.
+- Add doctor/runtime warnings when macOS keychain access is using legacy/CLI fallback paths where Touch ID prompts may not be offered.
+- Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
+
+### Fixes
+
+- Keep `cdx doctor` fast by making keychain ACL checks opt-in and improving output with clearer guidance and progress feedback.
+- Remove Windows credential payload chunking now that larger payloads are supported directly in the secure store backend.
+
+### Internal
+
+- Temporarily switch keyring dependency from `cross-keychain` to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is available.
+- Add Windows CI coverage including shell smoke checks and expanded secure-store integration tests (including Windows CRUD coverage).
+
 ## 1.4.0
 
 ### Features

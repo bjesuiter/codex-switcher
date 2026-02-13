@@ -19,17 +19,20 @@ describe("resolveRuntimePaths", () => {
   });
 
   it("respects XDG env overrides", () => {
+    const configHome = "/tmp/config-home";
+    const dataHome = "/tmp/data-home";
+
     const resolved = resolveRuntimePaths({
       platform: "linux",
       env: {
-        XDG_CONFIG_HOME: "/tmp/config-home",
-        XDG_DATA_HOME: "/tmp/data-home",
+        XDG_CONFIG_HOME: configHome,
+        XDG_DATA_HOME: dataHome,
       },
       homeDir: "/home/tester",
     });
 
-    expect(resolved.configDir).toBe("/tmp/config-home/cdx");
-    expect(resolved.authPath).toBe("/tmp/data-home/opencode/auth.json");
+    expect(resolved.configDir).toBe(path.join(configHome, "cdx"));
+    expect(resolved.authPath).toBe(path.join(dataHome, "opencode", "auth.json"));
   });
 
   it("uses APPDATA/LOCALAPPDATA on win32", () => {
@@ -52,14 +55,15 @@ describe("resolveRuntimePaths", () => {
   });
 
   it("respects PI_CODING_AGENT_DIR override", () => {
+    const piAgentDir = "/tmp/pi-agent";
     const resolved = resolveRuntimePaths({
       platform: "linux",
       env: {
-        PI_CODING_AGENT_DIR: "/tmp/pi-agent",
+        PI_CODING_AGENT_DIR: piAgentDir,
       },
       homeDir: "/home/tester",
     });
 
-    expect(resolved.piAuthPath).toBe("/tmp/pi-agent/auth.json");
+    expect(resolved.piAuthPath).toBe(path.join(piAgentDir, "auth.json"));
   });
 });

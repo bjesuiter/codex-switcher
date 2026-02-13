@@ -4,8 +4,9 @@ import {
   listBackends,
   setPassword,
   useBackend,
-} from "cross-keychain";
+} from "@bjesuiter/cross-keychain";
 import type { OAuthPayload } from "../types";
+import { getCrossKeychainBackendOverrides } from "./cross-keychain-overrides";
 import { ensureFallbackConsent } from "./fallback-consent";
 
 const SERVICE_PREFIX = "cdx-openai-";
@@ -18,7 +19,7 @@ let selectedBackend: BackendId | null = null;
 
 const tryUseBackend = async (backendId: BackendId): Promise<boolean> => {
   try {
-    await useBackend(backendId);
+    await useBackend(backendId, getCrossKeychainBackendOverrides());
     return true;
   } catch {
     return false;
@@ -107,17 +108,16 @@ export const saveWindowsCrossKeychainPayload = async (
   payload: OAuthPayload,
 ): Promise<void> => withService(
   accountId,
-  (service) => setPassword(service, accountId, JSON.stringify(payload)),
+  async (service) => {
+    await setPassword(service, accountId, JSON.stringify(payload));
+  },
   { forWrite: true },
 );
 
 export const loadWindowsCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
-  const raw = await withService(
-    accountId,
-    (service) => getPassword(service, accountId),
-  );
+  const raw = await withService(accountId, (service) => getPassword(service, accountId));
 
   if (raw === null) {
     throw new Error(`No stored credentials found for account ${accountId}.`);
@@ -128,7 +128,12 @@ export const loadWindowsCrossKeychainPayload = async (
 
 export const deleteWindowsCrossKeychainPayload = async (
   accountId: string,
-): Promise<void> => withService(accountId, (service) => deletePassword(service, accountId));
+): Promise<void> => withService(
+  accountId,
+  async (service) => {
+    await deletePassword(service, accountId);
+  },
+);
 
 export const windowsCrossKeychainPayloadExists = async (
   accountId: string,

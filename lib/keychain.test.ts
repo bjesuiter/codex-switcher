@@ -28,7 +28,7 @@ describe("keychain", () => {
     });
   });
 
-  describe.skipIf(!!process.env.CI)("keychain operations", () => {
+  describe.skipIf(process.platform !== "darwin" || !!process.env.CI)("keychain operations", () => {
     afterEach(() => {
       try {
         deleteKeychainPayload(TEST_ACCOUNT_ID);
@@ -82,7 +82,7 @@ describe("keychain", () => {
     });
   });
 
-  describe.skipIf(!!process.env.CI)("listKeychainAccounts", () => {
+  describe.skipIf(process.platform !== "darwin" || !!process.env.CI)("listKeychainAccounts", () => {
     beforeEach(() => {
       saveKeychainPayload(TEST_ACCOUNT_ID, TEST_PAYLOAD);
     });

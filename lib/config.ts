@@ -1,7 +1,30 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { getPaths } from "./paths";
-import type { Config } from "./types";
+import type { Config, SecretStoreSelection } from "./types";
+
+const isSecretStoreSelection = (value: unknown): value is SecretStoreSelection =>
+  value === "auto" || value === "legacy-keychain";
+
+export const loadConfiguredSecretStoreSelection = async (): Promise<
+  SecretStoreSelection | undefined
+> => {
+  const { configPath } = getPaths();
+
+  if (!existsSync(configPath)) {
+    return undefined;
+  }
+
+  try {
+    const raw = await readFile(configPath, "utf8");
+    const parsed = JSON.parse(raw) as Partial<Config>;
+    return isSecretStoreSelection(parsed.secretStore)
+      ? parsed.secretStore
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const loadConfig = async (): Promise<Config> => {
   const { configPath } = getPaths();
@@ -21,6 +44,10 @@ export const loadConfig = async (): Promise<Config> => {
 
   if (typeof parsed.current !== "number" || Number.isNaN(parsed.current)) {
     parsed.current = 0;
+  }
+
+  if (!isSecretStoreSelection(parsed.secretStore)) {
+    delete parsed.secretStore;
   }
 
   return parsed;

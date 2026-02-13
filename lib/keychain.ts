@@ -34,6 +34,33 @@ export const runSecuritySafe = (args: string[]): { success: boolean; output: str
   };
 };
 
+export const runSecuritySafeAsync = async (
+  args: string[],
+): Promise<{ success: boolean; output: string }> => {
+  const childProcess = Bun.spawn(["security", ...args], {
+    stderr: "pipe",
+    stdout: "pipe",
+  });
+
+  const stdoutPromise = childProcess.stdout
+    ? new Response(childProcess.stdout).text()
+    : Promise.resolve("");
+  const stderrPromise = childProcess.stderr
+    ? new Response(childProcess.stderr).text()
+    : Promise.resolve("");
+
+  const [exitCode, stdout, stderr] = await Promise.all([
+    childProcess.exited,
+    stdoutPromise,
+    stderrPromise,
+  ]);
+
+  return {
+    success: exitCode === 0,
+    output: exitCode === 0 ? stdout : stderr,
+  };
+};
+
 export const saveKeychainPayload = (accountId: string, payload: OAuthPayload): void => {
   const service = getKeychainService(accountId);
   const payloadJson = JSON.stringify(payload);

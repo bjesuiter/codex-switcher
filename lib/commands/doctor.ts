@@ -1,13 +1,36 @@
+import path from "node:path";
+import * as p from "@clack/prompts";
 import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
+import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
+import { getSecretStoreAdapter } from "../secrets/store";
 import { exitWithCommandError } from "./errors";
+
+const hasRuntimeTrustedApp = (
+  trustedApplications: string[],
+  runtimeExecutablePath: string,
+): boolean => {
+  const runtimeBaseName = path.basename(runtimeExecutablePath).toLowerCase();
+
+  return trustedApplications.some((trustedApp) => {
+    if (trustedApp === runtimeExecutablePath) {
+      return true;
+    }
+
+    return path.basename(trustedApp).toLowerCase() === runtimeBaseName;
+  });
+};
 
 export const registerDoctorCommand = (program: Command): void => {
   program
     .command("doctor")
     .description("Show auth file paths and runtime capabilities")
-    .action(async () => {
+    .option(
+      "--check-keychain-acl",
+      "Run keychain trusted-app/ACL checks on macOS (can be slow)",
+    )
+    .action(async (options: { checkKeychainAcl?: boolean }) => {
       try {
         const status = await getStatus();
         const paths = getPaths();
@@ -57,6 +80,78 @@ export const registerDoctorCommand = (program: Command): void => {
         process.stdout.write(
           `  Browser launcher: ${status.capabilities.browserLauncher.label} — ${browserState}\n`,
         );
+
+        if (process.platform === "darwin" && !options.checkKeychainAcl) {
+          process.stdout.write("  ┌─ Optional keychain ACL check\n");
+          process.stdout.write("  │  Run: cdx doctor --check-keychain-acl\n");
+          process.stdout.write(
+            "  │  Verifies whether your current runtime is trusted by Keychain.\n",
+          );
+          process.stdout.write("  └─ Expected duration: ~30-60 seconds\n");
+        }
+
+        if (process.platform === "darwin" && options.checkKeychainAcl) {
+          const secretStore = getSecretStoreAdapter();
+          const accountsWithSecrets = status.accounts.filter((account) => account.secureStoreExists);
+
+          if (accountsWithSecrets.length > 0) {
+            const runtimeExecutablePath = process.execPath;
+            const services = accountsWithSecrets.map((account) =>
+              secretStore.getServiceName(account.accountId)
+            );
+
+            process.stdout.write("\nKeychain ACL checks:\n");
+            process.stdout.write(`  Runtime executable: ${runtimeExecutablePath}\n`);
+
+            const aclSpinner = p.spinner();
+            const accountWord = accountsWithSecrets.length === 1 ? "account" : "accounts";
+            aclSpinner.start(
+              `Checking keychain ACLs for ${accountsWithSecrets.length} ${accountWord}...`,
+            );
+            const decryptAccessByService = await getKeychainDecryptAccessByServiceAsync(services);
+            aclSpinner.stop("Keychain ACL checks complete.");
+
+            for (const account of accountsWithSecrets) {
+              const service = secretStore.getServiceName(account.accountId);
+              const decryptAccess = decryptAccessByService.get(service);
+              const accountLabel = resolveLabel(account.accountId);
+
+              if (!decryptAccess || decryptAccess.mode === "missing") {
+                process.stdout.write(
+                  `  ${accountLabel}: unable to read decrypt trusted apps (service: ${service})\n`,
+                );
+                continue;
+              }
+
+              if (decryptAccess.mode === "all-apps") {
+                process.stdout.write(
+                  `  ${accountLabel}: decrypt access allows all apps (<null>)\n`,
+                );
+                continue;
+              }
+
+              const runtimeTrusted = hasRuntimeTrustedApp(
+                decryptAccess.applications,
+                runtimeExecutablePath,
+              );
+              const trustedAppsList = decryptAccess.applications.join(", ");
+
+              if (runtimeTrusted) {
+                process.stdout.write(`  ${accountLabel}: runtime is in trusted apps\n`);
+                continue;
+              }
+
+              process.stdout.write(
+                `  ⚠ ${accountLabel}: runtime not found in trusted apps\n`,
+              );
+              process.stdout.write(`    Service: ${service}\n`);
+              process.stdout.write(`    Trusted apps: ${trustedAppsList || "(none)"}\n`);
+              process.stdout.write(
+                "    This secret may have been created with a different runtime/toolchain (for example node vs bun).\n",
+              );
+            }
+          }
+        }
 
         process.stdout.write("\n");
       } catch (error) {
