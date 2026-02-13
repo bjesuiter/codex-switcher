@@ -13,7 +13,7 @@ export type AccountStatus = {
   accountId: string;
   label?: string;
   isCurrent: boolean;
-  keychainExists: boolean;
+  secureStoreExists: boolean;
   hasIdToken: boolean;
   expiresAt: number | null;
   expiresIn: string;
@@ -109,12 +109,12 @@ const getAccountStatus = async (
   label?: string,
 ): Promise<AccountStatus> => {
   const secretStore = getSecretStoreAdapter();
-  const keychainExists = await secretStore.exists(accountId);
+  const secureStoreExists = await secretStore.exists(accountId);
 
   let expiresAt: number | null = null;
   let hasIdToken = false;
 
-  if (keychainExists) {
+  if (secureStoreExists) {
     try {
       const payload: OAuthPayload = await secretStore.load(accountId);
       expiresAt = payload.expires;
@@ -127,7 +127,7 @@ const getAccountStatus = async (
     accountId,
     label,
     isCurrent,
-    keychainExists,
+    secureStoreExists,
     hasIdToken,
     expiresAt,
     expiresIn: formatExpiry(expiresAt),

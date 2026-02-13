@@ -33,7 +33,7 @@ const removeStoredCredentials = async (accountId: string): Promise<void> => {
 
 const getRefreshExpiryState = async (accountId: string): Promise<string> => {
   if (!(await hasStoredCredentials(accountId))) {
-    return "unknown [no keychain]";
+    return "unknown [no secure store entry]";
   }
 
   try {
@@ -262,7 +262,7 @@ const handleRemoveAccount = async (): Promise<void> => {
   try {
     await removeStoredCredentials(accountId);
   } catch {
-    // Keychain entry may not exist
+    // Secure-store entry may not exist
   }
 
   const previousAccountId = config.accounts[config.current]?.accountId;
@@ -363,9 +363,9 @@ const handleStatus = async (): Promise<void> => {
     const name = account.label
       ? `${account.label} (${account.accountId})`
       : account.accountId;
-    const keychain = account.keychainExists ? "" : " [no keychain]";
+    const secureStore = account.secureStoreExists ? "" : " [no secure store entry]";
     const idToken = account.hasIdToken ? "" : " [no id_token]";
-    p.log.message(`${marker}${name} — ${account.expiresIn}${keychain}${idToken}`);
+    p.log.message(`${marker}${name} — ${account.expiresIn}${secureStore}${idToken}`);
   }
 
   const ocStatus = status.opencodeAuth.exists

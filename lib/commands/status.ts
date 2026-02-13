@@ -22,7 +22,7 @@ export const registerStatusCommand = (program: Command): void => {
           const account = status.accounts[i];
           const marker = account.isCurrent ? "→ " : "  ";
           const warnings: string[] = [];
-          if (!account.keychainExists) warnings.push("[no keychain]");
+          if (!account.secureStoreExists) warnings.push("[no secure store entry]");
           if (!account.hasIdToken) warnings.push("[no id_token]");
           const warnStr = warnings.length > 0 ? `  ${warnings.join(" ")}` : "";
 

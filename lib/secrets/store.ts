@@ -43,13 +43,9 @@ const createMacOSKeychainAdapter = (): SecretStoreAdapter => ({
   id: "macos-keychain",
   label: "macOS Keychain",
   getServiceName: getKeychainService,
-  save: async (accountId: string, payload: OAuthPayload) => {
-    saveKeychainPayload(accountId, payload);
-  },
+  save: async (accountId: string, payload: OAuthPayload) => saveKeychainPayload(accountId, payload),
   load: async (accountId: string) => loadKeychainPayload(accountId),
-  delete: async (accountId: string) => {
-    deleteKeychainPayload(accountId);
-  },
+  delete: async (accountId: string) => deleteKeychainPayload(accountId),
   exists: async (accountId: string) => keychainPayloadExists(accountId),
   listAccountIds: async () => listKeychainAccounts(),
   getCapability: () => ({ available: true }),

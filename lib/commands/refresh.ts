@@ -30,7 +30,7 @@ export const registerReloginCommand = (program: Command): void => {
 
           const displayName = target.label ?? target.accountId;
           let expiryState = "unknown";
-          let keychainState = "";
+          let secureStoreState = "";
           const secretStore = getSecretStoreAdapter();
           if (await secretStore.exists(target.accountId)) {
             try {
@@ -40,10 +40,10 @@ export const registerReloginCommand = (program: Command): void => {
               expiryState = "unknown";
             }
           } else {
-            keychainState = " [no keychain]";
+            secureStoreState = " [no secure store entry]";
           }
           process.stdout.write(
-            `Current token status for ${displayName}: ${expiryState}${keychainState}\n`,
+            `Current token status for ${displayName}: ${expiryState}${secureStoreState}\n`,
           );
 
           const result = await performRefresh(target.accountId, target.label);

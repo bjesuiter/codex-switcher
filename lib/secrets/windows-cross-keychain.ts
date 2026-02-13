@@ -10,25 +10,36 @@ const SERVICE_PREFIX = "cdx-openai-";
 
 let backendInitPromise: Promise<void> | null = null;
 
+const tryUseBackend = async (backendId: "native-windows" | "windows"): Promise<boolean> => {
+  try {
+    await useBackend(backendId);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const ensureWindowsBackend = async (): Promise<void> => {
   if (!backendInitPromise) {
     backendInitPromise = (async () => {
-      try {
-        await useBackend("native-windows");
+      if (await tryUseBackend("native-windows")) {
         return;
-      } catch {
       }
 
-      try {
-        await useBackend("windows");
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        throw new Error(`Unable to initialize Windows credential backend via cross-keychain: ${msg}`);
+      if (await tryUseBackend("windows")) {
+        return;
       }
+
+      throw new Error("Unable to initialize Windows credential backend via cross-keychain.");
     })();
   }
 
-  await backendInitPromise;
+  try {
+    await backendInitPromise;
+  } catch {
+    backendInitPromise = null;
+    throw new Error("Unable to initialize Windows credential backend via cross-keychain.");
+  }
 };
 
 export const getWindowsCrossKeychainService = (accountId: string): string =>
@@ -49,21 +60,29 @@ const parsePayload = (accountId: string, raw: string): OAuthPayload => {
   return parsed;
 };
 
+const withService = async <T>(
+  accountId: string,
+  run: (service: string) => Promise<T>,
+): Promise<T> => {
+  await ensureWindowsBackend();
+  return run(getWindowsCrossKeychainService(accountId));
+};
+
 export const saveWindowsCrossKeychainPayload = async (
   accountId: string,
   payload: OAuthPayload,
-): Promise<void> => {
-  await ensureWindowsBackend();
-  const service = getWindowsCrossKeychainService(accountId);
-  await setPassword(service, accountId, JSON.stringify(payload));
-};
+): Promise<void> => withService(
+  accountId,
+  (service) => setPassword(service, accountId, JSON.stringify(payload)),
+);
 
 export const loadWindowsCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
-  await ensureWindowsBackend();
-  const service = getWindowsCrossKeychainService(accountId);
-  const raw = await getPassword(service, accountId);
+  const raw = await withService(
+    accountId,
+    (service) => getPassword(service, accountId),
+  );
 
   if (raw === null) {
     throw new Error(`No stored credentials found for account ${accountId}.`);
@@ -74,16 +93,11 @@ export const loadWindowsCrossKeychainPayload = async (
 
 export const deleteWindowsCrossKeychainPayload = async (
   accountId: string,
-): Promise<void> => {
-  await ensureWindowsBackend();
-  const service = getWindowsCrossKeychainService(accountId);
-  await deletePassword(service, accountId);
-};
+): Promise<void> => withService(accountId, (service) => deletePassword(service, accountId));
 
 export const windowsCrossKeychainPayloadExists = async (
   accountId: string,
-): Promise<boolean> => {
-  await ensureWindowsBackend();
-  const service = getWindowsCrossKeychainService(accountId);
-  return (await getPassword(service, accountId)) !== null;
-};
+): Promise<boolean> => withService(
+  accountId,
+  async (service) => (await getPassword(service, accountId)) !== null,
+);
