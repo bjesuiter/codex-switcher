@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-02-13T13:09:37Z
-updated_at: 2026-02-13T20:02:17Z
+updated_at: 2026-02-13T20:24:58Z
 parent: codex-switcher-zky5
 blocked_by:
     - codex-switcher-8j5t
@@ -37,3 +37,13 @@ Adjusted CI trigger behavior: remove direct push trigger, keep manual trigger, a
 - Removed push triggers from GitHub Actions CI workflow.
 - Kept manual triggering enabled with workflow_dispatch.
 - Wired publish workflow to call CI as a pre-publish gate via workflow_call.
+
+## Parse-error fix
+
+Fixing GitHub Actions parse error in `ci.yml` caused by matrix expression usage in step `shell` fields.
+
+## Parse-error fix completion
+
+- Replaced dynamic `shell: ${{ matrix.shell }}` usage with per-shell conditional steps.
+- Added explicit static shell steps for `pwsh`, `cmd`, and `bash` in Windows smoke tests.
+- This removes the GitHub parser error and keeps the same smoke coverage.

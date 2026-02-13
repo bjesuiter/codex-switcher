@@ -66,12 +66,26 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Smoke test CLI help/version
-        shell: ${{ matrix.shell }}
+      - name: Smoke test CLI (PowerShell)
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
         run: |
           bun run cdx.ts --help
           bun run cdx.ts --version
+          bun run cdx.ts doctor
 
-      - name: Smoke test doctor command
-        shell: ${{ matrix.shell }}
-        run: bun run cdx.ts doctor
+      - name: Smoke test CLI (CMD)
+        if: matrix.shell == 'cmd'
+        shell: cmd
+        run: |
+          bun run cdx.ts --help
+          bun run cdx.ts --version
+          bun run cdx.ts doctor
+
+      - name: Smoke test CLI (Git Bash)
+        if: matrix.shell == 'bash'
+        shell: bash
+        run: |
+          bun run cdx.ts --help
+          bun run cdx.ts --version
+          bun run cdx.ts doctor
