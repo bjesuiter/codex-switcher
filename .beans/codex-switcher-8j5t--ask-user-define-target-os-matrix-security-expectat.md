@@ -1,11 +1,11 @@
 ---
 # codex-switcher-8j5t
 title: 'Ask user: define target OS matrix + security expectations'
-status: in-progress
+status: completed
 type: task
 priority: critical
 created_at: 2026-02-13T12:59:25Z
-updated_at: 2026-02-13T13:12:55Z
+updated_at: 2026-02-13T13:25:51Z
 parent: codex-switcher-zky5
 ---
 
@@ -34,3 +34,19 @@ Open questions:
 
 - Linux scope decision: support Linux desktop environments with available keyring/Secret Service; broad distro support is acceptable when compatible keyring is present.
 - WSL/headless are out of scope for now; require future fnox-backed secret adapter support.
+
+
+- Secret storage policy (v1): **OS-native keyring only**; no encrypted-file fallback in current scope.
+- Distribution policy (v1): **npm is sufficient for now**; standalone distribution (brew/apt/scoop/chocolatey) deferred to later.
+
+
+## Summary of Changes
+
+Captured and finalized cross-platform scope decisions:
+- Windows target: Win10 + Win11
+- Windows shell policy: official PowerShell; best-effort CMD + Git Bash
+- Linux target: desktop environments with keyring/Secret Service
+- Explicitly out of scope for v1: WSL/headless (follow-up via fnox adapter)
+- Security policy for v1: OS-native keyring only (no encrypted-file fallback)
+- Distribution policy for v1: npm is enough; standalone channels deferred
+- Added follow-up beans for Windows CI strategy, fnox adapter, and standalone distribution channels.
