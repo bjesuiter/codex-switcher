@@ -58,11 +58,26 @@ bun add -g @bjesuiter/codex-switch
 
 This exposes the `cdx` binary globally.
 
-## Windows/Linux Testing Status (Beta)
+## Usage
 
-Windows and Linux support are **test-ready** and suitable for friend/beta testing, but are not yet production-proven by broad real-world testing.
+### macOS (stable)
 
-### Suggested Windows tester checklist
+1. Install [Bun](https://bun.sh)
+2. Install `cdx`
+3. Run and verify:
+   - `cdx login`
+   - `cdx status`
+   - `cdx switch`
+   - `cdx relogin <account-id-or-label>`
+4. Confirm auth files are written correctly after switching:
+   - `~/.local/share/opencode/auth.json` (or `$XDG_DATA_HOME/opencode/auth.json`)
+   - `~/.codex/auth.json`
+   - `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
+5. Credentials are stored in macOS Keychain.
+
+### Windows (beta)
+
+Windows support is **test-ready** and suitable for friend/beta testing, but is not yet production-proven by broad real-world testing.
 
 1. Install [Bun](https://bun.sh)
 2. Install `cdx`
@@ -78,7 +93,9 @@ Windows and Linux support are **test-ready** and suitable for friend/beta testin
 5. If prompted about secure-store fallback, explicitly choose whether to allow it for testing.
    - Non-interactive override (if you accept the risk): `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
 
-### Suggested Linux tester checklist
+### Linux (beta)
+
+Linux support is **test-ready** and suitable for friend/beta testing, but is not yet production-proven by broad real-world testing.
 
 1. Install [Bun](https://bun.sh)
 2. Ensure a Secret Service backend is available (for example GNOME Keyring with `secret-tool`)
@@ -97,64 +114,34 @@ Windows and Linux support are **test-ready** and suitable for friend/beta testin
 
 Please report the full command output and platform info (`cdx status`) for any failures.
 
-## Usage
+### Common command examples (all platforms)
 
-### Add your first account
+Add your first account:
 
 ```bash
 cdx login
 ```
 
-Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in the OS secure store (macOS Keychain, Windows Credential Manager, or Linux Secret Service).
-
-### Switch between accounts
+Switch between accounts:
 
 ```bash
 cdx switch
-```
-
-Interactive picker to select an account. Writes credentials to:
-- `~/.local/share/opencode/auth.json` (OpenCode)
-- `~/.pi/agent/auth.json` (Pi agent, or `$PI_CODING_AGENT_DIR/auth.json` when `PI_CODING_AGENT_DIR` is set)
-- `~/.codex/auth.json` (Codex CLI; requires `id_token`)
-
-```bash
 cdx switch --next
-```
-
-Cycles to the next configured account without prompting.
-
-```bash
 cdx switch <account-id-or-label>
 ```
 
-Switch directly to a specific account by ID or label.
-
-### Label accounts
+Label accounts:
 
 ```bash
 cdx label
-```
-
-Interactive prompt to assign a friendly name to an account.
-
-```bash
 cdx label <account> <new-label>
 ```
 
-Assign a label directly.
-
-### Interactive mode
+Interactive mode:
 
 ```bash
 cdx
 ```
-
-Running `cdx` without arguments opens an interactive menu to:
-- List all configured accounts
-- Switch to a different account
-- Add a new account (OAuth login)
-- Remove an account
 
 ## Commands
 
@@ -180,16 +167,34 @@ Running `cdx` without arguments opens an interactive menu to:
 
 ## How It Works
 
-- OAuth credentials are stored securely in macOS Keychain (macOS) or Windows Credential Manager (Windows)
+### Secure credential storage
+
+- **macOS:** macOS Keychain
+- **Windows:** Windows Credential Manager
+- **Linux:** Secret Service/keyring
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
-- Account list is stored in:
-  - macOS/Linux: `~/.config/cdx/accounts.json`
-  - Windows: `%APPDATA%\\cdx\\accounts.json`
-- Active account credentials are written to:
-  - `~/.local/share/opencode/auth.json`
-  - `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
-  - `~/.codex/auth.json` (when `id_token` exists)
+
+### Account list path
+
+- **macOS/Linux:** `~/.config/cdx/accounts.json` (or `$XDG_CONFIG_HOME/cdx/accounts.json`)
+- **Windows:** `%APPDATA%\\cdx\\accounts.json`
+
+### Auth file paths
+
+#### macOS / Linux
+
+- **OpenCode:** `~/.local/share/opencode/auth.json` (or `$XDG_DATA_HOME/opencode/auth.json`)
+- **Codex CLI:** `~/.codex/auth.json`
+- **Pi Agent:** `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
+
+#### Windows
+
+- **OpenCode:** `%LOCALAPPDATA%\\opencode\\auth.json`
+- **Codex CLI:** `%USERPROFILE%\\.codex\\auth.json`
+- **Pi Agent:** `%USERPROFILE%\\.pi\\agent\\auth.json` (or `%PI_CODING_AGENT_DIR%\\auth.json`)
+
+`cdx` writes Codex CLI auth only when `id_token` exists.
 
 ## For Developers
 
