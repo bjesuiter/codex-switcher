@@ -1,4 +1,12 @@
 import { configExists, loadConfig } from "../config";
+import {
+  deleteKeychainPayload,
+  getKeychainService,
+  keychainPayloadExists,
+  listKeychainAccounts,
+  loadKeychainPayload,
+  saveKeychainPayload,
+} from "../keychain";
 import type { OAuthPayload } from "../types";
 import {
   deleteLinuxCrossKeychainPayload,
@@ -22,6 +30,8 @@ import {
   windowsCrossKeychainPayloadExists,
 } from "./windows-cross-keychain";
 
+export type SecretStoreSelection = "auto" | "legacy-keychain";
+
 export type SecretStoreCapability = {
   available: boolean;
   reason?: string;
@@ -37,6 +47,156 @@ export type SecretStoreAdapter = {
   exists(accountId: string): Promise<boolean>;
   listAccountIds(): Promise<string[]>;
   getCapability(): SecretStoreCapability;
+};
+
+const MISSING_SECRET_STORE_ERROR_MARKERS = [
+  "No stored credentials found",
+  "No Keychain payload found",
+  "Password not found",
+];
+
+export const isMissingSecretStoreEntryError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return MISSING_SECRET_STORE_ERROR_MARKERS.some((marker) =>
+    error.message.includes(marker)
+  );
+};
+
+const createMissingSecretStoreEntryError = (accountId: string): Error =>
+  new Error(`No stored credentials found for account ${accountId}.`);
+
+const CACHED_ADAPTER_SYMBOL = Symbol.for("cdx.secretStore.cachedAdapter");
+
+type CachedSecretStoreAdapter = SecretStoreAdapter & {
+  [CACHED_ADAPTER_SYMBOL]?: true;
+};
+
+const withSecretStoreCache = (adapter: SecretStoreAdapter): SecretStoreAdapter => {
+  const alreadyCached = adapter as CachedSecretStoreAdapter;
+  if (alreadyCached[CACHED_ADAPTER_SYMBOL]) {
+    return adapter;
+  }
+
+  const payloadCache = new Map<string, OAuthPayload>();
+  const existsCache = new Map<string, boolean>();
+  const missingAccounts = new Set<string>();
+  const inFlightLoads = new Map<string, Promise<OAuthPayload>>();
+
+  const markPresent = (accountId: string, payload: OAuthPayload): void => {
+    payloadCache.set(accountId, payload);
+    existsCache.set(accountId, true);
+    missingAccounts.delete(accountId);
+  };
+
+  const markMissing = (accountId: string): void => {
+    payloadCache.delete(accountId);
+    existsCache.set(accountId, false);
+    missingAccounts.add(accountId);
+  };
+
+  const loadAndCache = async (accountId: string): Promise<OAuthPayload> => {
+    const existingPromise = inFlightLoads.get(accountId);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    const promise = (async () => {
+      try {
+        const payload = await adapter.load(accountId);
+        markPresent(accountId, payload);
+        return payload;
+      } catch (error) {
+        if (isMissingSecretStoreEntryError(error)) {
+          markMissing(accountId);
+        }
+        throw error;
+      } finally {
+        inFlightLoads.delete(accountId);
+      }
+    })();
+
+    inFlightLoads.set(accountId, promise);
+    return promise;
+  };
+
+  const cachedAdapter: CachedSecretStoreAdapter = {
+    id: adapter.id,
+    label: adapter.label,
+    getServiceName: (accountId: string) => adapter.getServiceName(accountId),
+    save: async (accountId: string, payload: OAuthPayload) => {
+      await adapter.save(accountId, payload);
+      markPresent(accountId, payload);
+    },
+    load: async (accountId: string) => {
+      const cachedPayload = payloadCache.get(accountId);
+      if (cachedPayload) {
+        return cachedPayload;
+      }
+
+      if (missingAccounts.has(accountId)) {
+        throw createMissingSecretStoreEntryError(accountId);
+      }
+
+      return loadAndCache(accountId);
+    },
+    delete: async (accountId: string) => {
+      try {
+        await adapter.delete(accountId);
+      } catch (error) {
+        if (isMissingSecretStoreEntryError(error)) {
+          markMissing(accountId);
+        }
+        throw error;
+      }
+
+      markMissing(accountId);
+    },
+    exists: async (accountId: string) => {
+      if (payloadCache.has(accountId)) {
+        return true;
+      }
+
+      if (missingAccounts.has(accountId)) {
+        return false;
+      }
+
+      const cachedExists = existsCache.get(accountId);
+      if (cachedExists !== undefined) {
+        return cachedExists;
+      }
+
+      try {
+        await loadAndCache(accountId);
+        return true;
+      } catch (error) {
+        if (isMissingSecretStoreEntryError(error)) {
+          return false;
+        }
+      }
+
+      const exists = await adapter.exists(accountId);
+      existsCache.set(accountId, exists);
+      if (!exists) {
+        missingAccounts.add(accountId);
+      }
+      return exists;
+    },
+    listAccountIds: async () => {
+      const accountIds = await adapter.listAccountIds();
+      for (const accountId of accountIds) {
+        existsCache.set(accountId, true);
+        missingAccounts.delete(accountId);
+      }
+      return accountIds;
+    },
+    getCapability: () => adapter.getCapability(),
+    [CACHED_ADAPTER_SYMBOL]: true,
+  };
+
+  return cachedAdapter;
 };
 
 const unsupportedError = (platform: NodeJS.Platform): Error =>
@@ -72,6 +232,22 @@ const createMacOSCrossKeychainAdapter = (): SecretStoreAdapter => ({
     );
     return existing.filter((item) => item.exists).map((item) => item.accountId);
   },
+  getCapability: () => ({ available: true }),
+});
+
+export const createMacOSLegacyKeychainAdapter = (): SecretStoreAdapter => ({
+  id: "macos-legacy-keychain",
+  label: "macOS Keychain (legacy security CLI)",
+  getServiceName: getKeychainService,
+  save: async (accountId, payload) => {
+    saveKeychainPayload(accountId, payload);
+  },
+  load: async (accountId) => loadKeychainPayload(accountId),
+  delete: async (accountId) => {
+    deleteKeychainPayload(accountId);
+  },
+  exists: async (accountId) => keychainPayloadExists(accountId),
+  listAccountIds: async () => listKeychainAccounts(),
   getCapability: () => ({ available: true }),
 });
 
@@ -158,17 +334,35 @@ export const createRuntimeSecretStoreAdapter = (
   return createUnsupportedAdapter(platform);
 };
 
-let currentSecretStoreAdapter: SecretStoreAdapter = createRuntimeSecretStoreAdapter();
+export const createSecretStoreAdapterFromSelection = (
+  selection: SecretStoreSelection = "auto",
+  platform: NodeJS.Platform = process.platform,
+): SecretStoreAdapter => {
+  if (selection === "legacy-keychain") {
+    if (platform !== "darwin") {
+      throw new Error(
+        "The legacy keychain adapter is only available on macOS (darwin).",
+      );
+    }
+    return createMacOSLegacyKeychainAdapter();
+  }
+
+  return createRuntimeSecretStoreAdapter(platform);
+};
+
+let currentSecretStoreAdapter: SecretStoreAdapter = withSecretStoreCache(
+  createRuntimeSecretStoreAdapter(),
+);
 
 export const getSecretStoreAdapter = (): SecretStoreAdapter =>
   currentSecretStoreAdapter;
 
 export const setSecretStoreAdapter = (adapter: SecretStoreAdapter): void => {
-  currentSecretStoreAdapter = adapter;
+  currentSecretStoreAdapter = withSecretStoreCache(adapter);
 };
 
 export const resetSecretStoreAdapter = (): void => {
-  currentSecretStoreAdapter = createRuntimeSecretStoreAdapter();
+  currentSecretStoreAdapter = withSecretStoreCache(createRuntimeSecretStoreAdapter());
 };
 
 export const getSecretStoreCapability = (): {
