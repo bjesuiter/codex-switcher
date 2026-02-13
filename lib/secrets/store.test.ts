@@ -2,9 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { createRuntimeSecretStoreAdapter } from "./store";
 
 describe("createRuntimeSecretStoreAdapter", () => {
-  it("selects macOS keychain adapter for darwin", () => {
+  it("selects cross-keychain macOS adapter for darwin", () => {
     const adapter = createRuntimeSecretStoreAdapter("darwin");
-    expect(adapter.id).toBe("macos-keychain");
+    expect(adapter.id).toBe("macos-cross-keychain");
     expect(adapter.getCapability().available).toBe(true);
   });
 

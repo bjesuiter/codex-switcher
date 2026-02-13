@@ -1,15 +1,5 @@
-import {
-  deleteKeychainPayload,
-  getKeychainService,
-  keychainPayloadExists,
-  listKeychainAccounts,
-  loadKeychainPayload,
-  saveKeychainPayload,
-} from "../keychain";
 import { configExists, loadConfig } from "../config";
 import type { OAuthPayload } from "../types";
-import { listBackends } from "cross-keychain";
-import { ensureFallbackConsent } from "./fallback-consent";
 import {
   deleteLinuxCrossKeychainPayload,
   getLinuxCrossKeychainService,
@@ -17,6 +7,13 @@ import {
   loadLinuxCrossKeychainPayload,
   saveLinuxCrossKeychainPayload,
 } from "./linux-cross-keychain";
+import {
+  deleteMacOSCrossKeychainPayload,
+  getMacOSCrossKeychainService,
+  loadMacOSCrossKeychainPayload,
+  macosCrossKeychainPayloadExists,
+  saveMacOSCrossKeychainPayload,
+} from "./macos-cross-keychain";
 import {
   deleteWindowsCrossKeychainPayload,
   getWindowsCrossKeychainService,
@@ -42,58 +39,11 @@ export type SecretStoreAdapter = {
   getCapability(): SecretStoreCapability;
 };
 
-const MAC_FALLBACK_SCOPE = "darwin:security-cli";
-
-let macNativeStoreOptionPromise: Promise<boolean> | null = null;
-
 const unsupportedError = (platform: NodeJS.Platform): Error =>
   new Error(
     `No default secret store adapter configured for platform '${platform}'. ` +
       "Only macOS, Windows, and Linux adapters are wired by default right now.",
   );
-
-const hasNativeMacStoreOption = async (): Promise<boolean> => {
-  if (!macNativeStoreOptionPromise) {
-    macNativeStoreOptionPromise = (async () => {
-      try {
-        const backends = await listBackends();
-        return backends.some((backend) => backend.id === "native-macos");
-      } catch {
-        return false;
-      }
-    })();
-  }
-
-  return macNativeStoreOptionPromise;
-};
-
-const ensureMacFallbackConsentIfNeeded = async (): Promise<void> => {
-  if (await hasNativeMacStoreOption()) {
-    return;
-  }
-
-  await ensureFallbackConsent(
-    MAC_FALLBACK_SCOPE,
-    "⚠ Security warning: only the macOS CLI secure-store path is available.\n" +
-      "This path uses the `security` command to access Keychain.\n" +
-      "Compared to native bindings, secrets may be more exposed to process inspection/logging while CLI commands run.",
-  );
-};
-
-const createMacOSKeychainAdapter = (): SecretStoreAdapter => ({
-  id: "macos-keychain",
-  label: "macOS Keychain",
-  getServiceName: getKeychainService,
-  save: async (accountId: string, payload: OAuthPayload) => {
-    await ensureMacFallbackConsentIfNeeded();
-    saveKeychainPayload(accountId, payload);
-  },
-  load: async (accountId: string) => loadKeychainPayload(accountId),
-  delete: async (accountId: string) => deleteKeychainPayload(accountId),
-  exists: async (accountId: string) => keychainPayloadExists(accountId),
-  listAccountIds: async () => listKeychainAccounts(),
-  getCapability: () => ({ available: true }),
-});
 
 const loadConfiguredAccountIds = async (): Promise<string[]> => {
   if (!configExists()) {
@@ -103,6 +53,27 @@ const loadConfiguredAccountIds = async (): Promise<string[]> => {
   const config = await loadConfig();
   return config.accounts.map((account) => account.accountId);
 };
+
+const createMacOSCrossKeychainAdapter = (): SecretStoreAdapter => ({
+  id: "macos-cross-keychain",
+  label: "macOS Keychain (cross-keychain)",
+  getServiceName: getMacOSCrossKeychainService,
+  save: saveMacOSCrossKeychainPayload,
+  load: loadMacOSCrossKeychainPayload,
+  delete: deleteMacOSCrossKeychainPayload,
+  exists: macosCrossKeychainPayloadExists,
+  listAccountIds: async () => {
+    const accountIds = await loadConfiguredAccountIds();
+    const existing = await Promise.all(
+      accountIds.map(async (accountId) => ({
+        accountId,
+        exists: await macosCrossKeychainPayloadExists(accountId),
+      })),
+    );
+    return existing.filter((item) => item.exists).map((item) => item.accountId);
+  },
+  getCapability: () => ({ available: true }),
+});
 
 const createWindowsCrossKeychainAdapter = (): SecretStoreAdapter => ({
   id: "windows-cross-keychain",
@@ -173,7 +144,7 @@ export const createRuntimeSecretStoreAdapter = (
   platform: NodeJS.Platform = process.platform,
 ): SecretStoreAdapter => {
   if (platform === "darwin") {
-    return createMacOSKeychainAdapter();
+    return createMacOSCrossKeychainAdapter();
   }
 
   if (platform === "win32") {
