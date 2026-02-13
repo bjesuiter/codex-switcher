@@ -31,10 +31,10 @@
     "tsdown": "^0.20.3"
   },
   "dependencies": {
+    "@bjesuiter/cross-keychain": "1.1.0-jb.0",
     "@bomb.sh/tab": "^0.0.13",
     "@clack/prompts": "^1.0.0",
     "@openauthjs/openauth": "^0.4.3",
-    "commander": "^14.0.3",
-    "cross-keychain": "^1.1.0"
+    "commander": "^14.0.3"
   }
 }

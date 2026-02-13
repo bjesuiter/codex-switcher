@@ -4,8 +4,9 @@ import {
   listBackends,
   setPassword,
   useBackend,
-} from "cross-keychain";
+} from "@bjesuiter/cross-keychain";
 import type { OAuthPayload } from "../types";
+import { getCrossKeychainBackendOverrides } from "./cross-keychain-overrides";
 import { ensureFallbackConsent } from "./fallback-consent";
 
 const SERVICE_PREFIX = "cdx-openai-";
@@ -20,7 +21,7 @@ let selectedBackend: BackendId | null = null;
 
 const tryUseBackend = async (backendId: BackendId): Promise<boolean> => {
   try {
-    await useBackend(backendId);
+    await useBackend(backendId, getCrossKeychainBackendOverrides());
     return true;
   } catch {
     return false;
