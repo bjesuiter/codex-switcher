@@ -160,7 +160,7 @@ export const performRefresh = async (
       ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
     };
 
-    getSecretStoreAdapter().save(newAccountId, payload);
+    await getSecretStoreAdapter().save(newAccountId, payload);
 
     if (spinner) {
       spinner.stop("Credentials refreshed!");
@@ -232,7 +232,7 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
     ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
   };
 
-  getSecretStoreAdapter().save(accountId, payload);
+  await getSecretStoreAdapter().save(accountId, payload);
 
   spinner.stop("Login successful!");
 

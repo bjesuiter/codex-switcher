@@ -23,6 +23,13 @@ describe("cdx CLI", () => {
       );
     });
 
+    it("has doctor command registered", () => {
+      const program = createProgram();
+      const doctorCmd = program.commands.find((cmd) => cmd.name() === "doctor");
+      expect(doctorCmd).toBeDefined();
+      expect(doctorCmd?.description()).toBe("Show auth file paths and runtime capabilities");
+    });
+
     it("has description set", () => {
       const program = createProgram();
       expect(program.description()).toBe(
@@ -42,6 +49,7 @@ describe("cdx CLI", () => {
       const output = result.stdout.toString();
       expect(output).toContain("Usage: cdx");
       expect(output).toContain("switch");
+      expect(output).toContain("doctor");
       expect(output).toContain("--help");
       expect(output).toContain("--version");
     });

@@ -4,6 +4,7 @@ import pkg from "./package.json";
 import { exitWithCommandError } from "./lib/commands/errors";
 import {
   registerDefaultInteractiveAction,
+  registerDoctorCommand,
   registerHelpCommand,
   registerLabelCommand,
   registerLoginCommand,
@@ -49,6 +50,7 @@ export const createProgram = (
   registerSwitchCommand(program);
   registerLabelCommand(program);
   registerStatusCommand(program);
+  registerDoctorCommand(program);
   registerUsageCommand(program);
   registerHelpCommand(program);
   registerVersionCommand(program, pkg.version);

@@ -15,7 +15,7 @@ export const switchNext = async (): Promise<void> => {
     throw new Error("Account entry missing accountId.");
   }
 
-  const payload = getSecretStoreAdapter().load(nextAccount.accountId);
+  const payload = await getSecretStoreAdapter().load(nextAccount.accountId);
   const result = await writeAllAuthFiles(payload);
 
   config.current = nextIndex;
@@ -38,7 +38,7 @@ export const switchToAccount = async (identifier: string): Promise<void> => {
   }
 
   const account = config.accounts[index];
-  const payload = getSecretStoreAdapter().load(account.accountId);
+  const payload = await getSecretStoreAdapter().load(account.accountId);
   const result = await writeAllAuthFiles(payload);
 
   config.current = index;

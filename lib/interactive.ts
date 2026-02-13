@@ -18,26 +18,26 @@ const getAccountDisplay = (
   return isCurrent ? `${name} (current)` : name;
 };
 
-const hasStoredCredentials = (accountId: string): boolean =>
+const hasStoredCredentials = async (accountId: string): Promise<boolean> =>
   getSecretStoreAdapter().exists(accountId);
 
-const loadStoredCredentials = (accountId: string) =>
+const loadStoredCredentials = async (accountId: string) =>
   getSecretStoreAdapter().load(accountId);
 
-const getStoredAccountIds = (): string[] =>
+const getStoredAccountIds = async (): Promise<string[]> =>
   getSecretStoreAdapter().listAccountIds();
 
-const removeStoredCredentials = (accountId: string): void => {
-  getSecretStoreAdapter().delete(accountId);
+const removeStoredCredentials = async (accountId: string): Promise<void> => {
+  await getSecretStoreAdapter().delete(accountId);
 };
 
-const getRefreshExpiryState = (accountId: string): string => {
-  if (!hasStoredCredentials(accountId)) {
-    return "unknown [no keychain]";
+const getRefreshExpiryState = async (accountId: string): Promise<string> => {
+  if (!(await hasStoredCredentials(accountId))) {
+    return "unknown [no secure store entry]";
   }
 
   try {
-    const payload = loadStoredCredentials(accountId);
+    const payload = await loadStoredCredentials(accountId);
     return formatExpiry(payload.expires);
   } catch {
     return "unknown";
@@ -59,7 +59,7 @@ const handleListAccounts = async (): Promise<void> => {
     const displayName = account.label
       ? `${account.label} (${account.accountId})`
       : account.accountId;
-    const status = hasStoredCredentials(account.accountId)
+    const status = await hasStoredCredentials(account.accountId)
       ? ""
       : " (missing credentials)";
     p.log.message(`${marker}${displayName}${status}`);
@@ -113,7 +113,7 @@ export const handleSwitchAccount = async (): Promise<void> => {
 
   let payload;
   try {
-    payload = loadStoredCredentials(selectedAccount.accountId);
+    payload = await loadStoredCredentials(selectedAccount.accountId);
   } catch {
     p.log.error(
       `Missing credentials for account ${selectedAccount.label ?? selectedAccount.accountId}. Re-login with 'cdx login'.`,
@@ -159,14 +159,16 @@ export const handleReloginAccount = async (): Promise<void> => {
 
   const currentAccountId = config.accounts[config.current]?.accountId;
 
-  const options = config.accounts.map((account) => ({
-    value: account.accountId,
-    label: `${getAccountDisplay(
-      account.accountId,
-      account.accountId === currentAccountId,
-      account.label,
-    )} — ${getRefreshExpiryState(account.accountId)}`,
-  }));
+  const options = await Promise.all(
+    config.accounts.map(async (account) => ({
+      value: account.accountId,
+      label: `${getAccountDisplay(
+        account.accountId,
+        account.accountId === currentAccountId,
+        account.label,
+      )} — ${await getRefreshExpiryState(account.accountId)}`,
+    })),
+  );
 
   const selected = await p.select({
     message: "Select account to re-login:",
@@ -180,7 +182,7 @@ export const handleReloginAccount = async (): Promise<void> => {
 
   const accountId = selected as string;
   const account = config.accounts.find((a) => a.accountId === accountId);
-  const expiryState = getRefreshExpiryState(accountId);
+  const expiryState = await getRefreshExpiryState(accountId);
   const displayName = account?.label ?? accountId;
   p.log.info(`Current token status for ${displayName}: ${expiryState}`);
 
@@ -258,9 +260,9 @@ const handleRemoveAccount = async (): Promise<void> => {
   }
 
   try {
-    removeStoredCredentials(accountId);
+    await removeStoredCredentials(accountId);
   } catch {
-    // Keychain entry may not exist
+    // Secure-store entry may not exist
   }
 
   const previousAccountId = config.accounts[config.current]?.accountId;
@@ -361,9 +363,9 @@ const handleStatus = async (): Promise<void> => {
     const name = account.label
       ? `${account.label} (${account.accountId})`
       : account.accountId;
-    const keychain = account.keychainExists ? "" : " [no keychain]";
+    const secureStore = account.secureStoreExists ? "" : " [no secure store entry]";
     const idToken = account.hasIdToken ? "" : " [no id_token]";
-    p.log.message(`${marker}${name} — ${account.expiresIn}${keychain}${idToken}`);
+    p.log.message(`${marker}${name} — ${account.expiresIn}${secureStore}${idToken}`);
   }
 
   const ocStatus = status.opencodeAuth.exists
@@ -388,7 +390,7 @@ export const runInteractiveMode = async (): Promise<void> => {
   let running = true;
 
   while (running) {
-    const storedAccounts = getStoredAccountIds();
+    const storedAccounts = await getStoredAccountIds();
     let currentInfo = "";
 
     if (configExists()) {

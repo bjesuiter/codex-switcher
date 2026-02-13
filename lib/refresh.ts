@@ -11,6 +11,6 @@ export const writeActiveAuthFilesIfCurrent = async (
   const current = config.accounts[config.current];
   if (!current || current.accountId !== accountId) return null;
 
-  const payload = getSecretStoreAdapter().load(accountId);
+  const payload = await getSecretStoreAdapter().load(accountId);
   return writeAllAuthFiles(payload);
 };

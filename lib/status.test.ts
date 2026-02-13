@@ -93,7 +93,7 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
     expect(status.accounts[0].accountId).toBe(TEST_ACCOUNT);
     expect(status.accounts[0].label).toBe("Test");
     expect(status.accounts[0].isCurrent).toBe(true);
-    expect(status.accounts[0].keychainExists).toBe(true);
+    expect(status.accounts[0].secureStoreExists).toBe(true);
     expect(status.accounts[0].hasIdToken).toBe(true);
     expect(status.accounts[0].expiresIn).toMatch(/^expires in/);
   });
@@ -105,7 +105,7 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
     });
 
     const status = await getStatus();
-    expect(status.accounts[0].keychainExists).toBe(false);
+    expect(status.accounts[0].secureStoreExists).toBe(false);
     expect(status.accounts[0].expiresIn).toBe("unknown");
   });
 
