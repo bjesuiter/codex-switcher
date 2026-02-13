@@ -6,27 +6,12 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.5.0
-
-#### Features
-
-- Add shell completion support via `cdx complete <shell>` (with parse-completion handling for shell integrations).
-- Add configurable secret-store selection with `--secret-store <mode>` (`auto` or `legacy-keychain`) plus persisted config support.
-- Switch macOS `auto` secret storage to cross-keychain backend selection (prefers native backend, falls back when needed).
-- Add `cdx migrate-secrets` to migrate legacy macOS keychain entries to cross-keychain and update config.
-- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to verify trusted runtime access.
-- Add doctor/runtime warnings when macOS keychain access is using legacy/CLI fallback paths where Touch ID prompts may not be offered.
-- Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
+### 1.5.1
 
 #### Fixes
 
-- Keep `cdx doctor` fast by making keychain ACL checks opt-in and improving output with clearer guidance and progress feedback.
-- Remove Windows credential payload chunking now that larger payloads are supported directly in the secure store backend.
-
-#### Internal
-
-- Temporarily switch keyring dependency from `cross-keychain` to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is available.
-- Add Windows CI coverage including shell smoke checks and expanded secure-store integration tests (including Windows CRUD coverage).
+- `cdx doctor --check-keychain-acl` now suggests running `cdx migrate-secrets` when keychain ACL/runtime mismatches are detected.
+- Clarify keychain ACL diagnostics wording to distinguish entries created by `cdx` (Bun runtime) vs the legacy Apple `security` CLI path, including why mismatches can trigger repeated keychain password prompts.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
@@ -179,7 +164,7 @@ cdx migrate-secrets
 | `cdx status` | Show account status, token expiry, and usage |
 | `cdx migrate-secrets` | Migrate macOS legacy keychain entries to cross-keychain and switch config to `auto` |
 | `cdx doctor` | Show auth file paths/state and runtime capabilities |
-| `cdx doctor --check-keychain-acl` | Run additional macOS keychain trusted-app/ACL checks (slow) |
+| `cdx doctor --check-keychain-acl` | Detect macOS keychain ACL/runtime mismatches (`cdx`/Bun vs legacy `security` CLI), warn about prompt-heavy setups, and suggest `cdx migrate-secrets` (slow) |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx help [command]` | Show help for all commands or one command |
@@ -215,7 +200,7 @@ source <(cdx complete bash)
 - `--secret-store <mode>` always overrides config for the current run.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
-- On macOS, `cdx doctor --check-keychain-acl` performs an additional trusted-app/ACL check for configured account secrets. This check can be slow.
+- On macOS, `cdx doctor --check-keychain-acl` checks whether configured secrets were created for the current `cdx`/Bun runtime or by the legacy Apple `security` CLI flow. Legacy ACL entries can trigger frequent keychain password prompts; when a mismatch is detected, `cdx` suggests `cdx migrate-secrets`. This check can be slow.
 - Cross-keychain payload size policy:
   - Default max password length override is `16384`.
   - Optional override: set `CDX_CROSS_KEYCHAIN_MAX_PASSWORD_LENGTH=<integer-above-4096>`.

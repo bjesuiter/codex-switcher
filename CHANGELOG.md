@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.5.1
+
+### Fixes
+
+- Add a `cdx migrate-secrets` suggestion in `cdx doctor --check-keychain-acl` output when keychain ACL/runtime mismatches are detected.
+- Clarify keychain ACL diagnostics wording to distinguish entries created by `cdx` (Bun runtime) vs the legacy Apple `security` CLI path, including the prompt-heavy mismatch behavior.
+
 ## 1.5.0
 
 ### Features
@@ -10,8 +17,8 @@
 - Add configurable secret-store selection with `--secret-store <mode>` (`auto` or `legacy-keychain`) plus persisted config support.
 - Switch macOS `auto` secret storage to cross-keychain backend selection (prefers native backend, falls back when needed).
 - Add `cdx migrate-secrets` to migrate legacy macOS keychain entries to cross-keychain and update config.
-- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to verify trusted runtime access.
-- Add doctor/runtime warnings when macOS keychain access is using legacy/CLI fallback paths where Touch ID prompts may not be offered.
+- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to detect whether keychain items were created by `cdx` (Bun runtime) or by the legacy Apple `security` CLI path.
+- Add doctor/runtime warnings for ACL/runtime mismatches that can cause frequent keychain password prompts, and suggest running `cdx migrate-secrets` when mismatches are found.
 - Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
 
 ### Fixes

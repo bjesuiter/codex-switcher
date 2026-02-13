@@ -149,6 +149,9 @@ export const registerDoctorCommand = (program: Command): void => {
               process.stdout.write(
                 "    This secret may have been created with a different runtime/toolchain (for example node vs bun).\n",
               );
+              process.stdout.write(
+                "    Suggested fix: run `cdx migrate-secrets` to recreate keychain entries with the current runtime ACL.\n",
+              );
             }
           }
         }
