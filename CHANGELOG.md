@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.4.0
+
+### Features
+
+- Add **beta Windows/Linux support** for account switching workflows, including platform-specific default paths for config/auth files.
+- Add secure credential storage adapters for Windows Credential Manager and Linux Secret Service/keyring (via `cross-keychain`).
+- Improve `cdx status` UX by rendering account/token info first, then loading usage for all accounts in parallel with a spinner and per-account failure reporting.
+- Require explicit one-time consent before using fallback secure-store backends, with non-interactive override via `CDX_ALLOW_SECURE_STORE_FALLBACK=1`.
+
+### Fixes
+
+- Improve cross-platform terminology in command output by using secure-store wording where macOS-specific keychain labels were misleading.
+
+### Internal
+
+- Introduce a shared platform abstraction layer (`lib/platform/*`) for path resolution, browser launching, and runtime capability detection.
+- Add/expand automated tests for platform path resolution, browser launchers, and secret-store adapters.
+- Update dependencies and lockfile to include `cross-keychain`.
+
 ## 1.3.0
 
 ### Features
