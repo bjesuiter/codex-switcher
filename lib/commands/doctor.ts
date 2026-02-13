@@ -1,7 +1,25 @@
+import path from "node:path";
 import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
+import { getKeychainDecryptAccessByService } from "../keychain-acl";
+import { getSecretStoreAdapter } from "../secrets/store";
 import { exitWithCommandError } from "./errors";
+
+const hasRuntimeTrustedApp = (
+  trustedApplications: string[],
+  runtimeExecutablePath: string,
+): boolean => {
+  const runtimeBaseName = path.basename(runtimeExecutablePath).toLowerCase();
+
+  return trustedApplications.some((trustedApp) => {
+    if (trustedApp === runtimeExecutablePath) {
+      return true;
+    }
+
+    return path.basename(trustedApp).toLowerCase() === runtimeBaseName;
+  });
+};
 
 export const registerDoctorCommand = (program: Command): void => {
   program
@@ -57,6 +75,62 @@ export const registerDoctorCommand = (program: Command): void => {
         process.stdout.write(
           `  Browser launcher: ${status.capabilities.browserLauncher.label} — ${browserState}\n`,
         );
+
+        if (process.platform === "darwin") {
+          const secretStore = getSecretStoreAdapter();
+          const accountsWithSecrets = status.accounts.filter((account) => account.secureStoreExists);
+
+          if (accountsWithSecrets.length > 0) {
+            const runtimeExecutablePath = process.execPath;
+            const services = accountsWithSecrets.map((account) =>
+              secretStore.getServiceName(account.accountId)
+            );
+            const decryptAccessByService = getKeychainDecryptAccessByService(services);
+
+            process.stdout.write("\nKeychain ACL checks:\n");
+            process.stdout.write(`  Runtime executable: ${runtimeExecutablePath}\n`);
+
+            for (const account of accountsWithSecrets) {
+              const service = secretStore.getServiceName(account.accountId);
+              const decryptAccess = decryptAccessByService.get(service);
+              const accountLabel = resolveLabel(account.accountId);
+
+              if (!decryptAccess || decryptAccess.mode === "missing") {
+                process.stdout.write(
+                  `  ${accountLabel}: unable to read decrypt trusted apps (service: ${service})\n`,
+                );
+                continue;
+              }
+
+              if (decryptAccess.mode === "all-apps") {
+                process.stdout.write(
+                  `  ${accountLabel}: decrypt access allows all apps (<null>)\n`,
+                );
+                continue;
+              }
+
+              const runtimeTrusted = hasRuntimeTrustedApp(
+                decryptAccess.applications,
+                runtimeExecutablePath,
+              );
+              const trustedAppsList = decryptAccess.applications.join(", ");
+
+              if (runtimeTrusted) {
+                process.stdout.write(`  ${accountLabel}: runtime is in trusted apps\n`);
+                continue;
+              }
+
+              process.stdout.write(
+                `  ⚠ ${accountLabel}: runtime not found in trusted apps\n`,
+              );
+              process.stdout.write(`    Service: ${service}\n`);
+              process.stdout.write(`    Trusted apps: ${trustedAppsList || "(none)"}\n`);
+              process.stdout.write(
+                "    This secret may have been created with a different runtime/toolchain (for example node vs bun).\n",
+              );
+            }
+          }
+        }
 
         process.stdout.write("\n");
       } catch (error) {
