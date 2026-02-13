@@ -6,37 +6,27 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### Unreleased
+### 1.5.0
 
 #### Features
 
-- Add a warning when macOS keychain runs on legacy/CLI fallback modes where Touch ID prompts may not be offered.
-- Raise cross-keychain max password length handling (default `16384`) to better support larger credential payloads.
-
-#### Internal
-
-- Temporarily switch secure-store dependency to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream updates are available.
-- Remove Windows credential chunking logic now that larger password lengths are supported directly.
-
-### 1.4.0
-
-#### Features
-
-- Add **beta Windows/Linux support** with platform-specific defaults for config/auth paths.
-- Add secure-store adapters via `cross-keychain` for Windows Credential Manager and Linux Secret Service/keyring.
-- Add `cdx doctor` to display auth file state with explicit paths plus runtime capability diagnostics.
-- Improve `cdx status` output flow: account/token details first, usage fetch with spinner after.
-- Require explicit one-time consent before using secure-store fallback backends (`CDX_ALLOW_SECURE_STORE_FALLBACK=1` override).
+- Add shell completion support via `cdx complete <shell>` (with parse-completion handling for shell integrations).
+- Add configurable secret-store selection with `--secret-store <mode>` (`auto` or `legacy-keychain`) plus persisted config support.
+- Switch macOS `auto` secret storage to cross-keychain backend selection (prefers native backend, falls back when needed).
+- Add `cdx migrate-secrets` to migrate legacy macOS keychain entries to cross-keychain and update config.
+- Add optional macOS keychain ACL diagnostics in `cdx doctor --check-keychain-acl` to verify trusted runtime access.
+- Add doctor/runtime warnings when macOS keychain access is using legacy/CLI fallback paths where Touch ID prompts may not be offered.
+- Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
 
 #### Fixes
 
-- Use platform-neutral secure-store wording in output where macOS-specific keychain wording was misleading.
+- Keep `cdx doctor` fast by making keychain ACL checks opt-in and improving output with clearer guidance and progress feedback.
+- Remove Windows credential payload chunking now that larger payloads are supported directly in the secure store backend.
 
 #### Internal
 
-- Add shared platform abstraction layer (`lib/platform/*`) for paths, browser launcher, and runtime capability detection.
-- Expand platform/path/browser/secret-store test coverage.
-- Update dependencies and lockfile for `cross-keychain`.
+- Temporarily switch keyring dependency from `cross-keychain` to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is available.
+- Add Windows CI coverage including shell smoke checks and expanded secure-store integration tests (including Windows CRUD coverage).
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 

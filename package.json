@@ -1,6 +1,6 @@
 {
   "name": "@bjesuiter/codex-switcher",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "description": "CLI tool to switch between multiple OpenAI accounts for OpenCode",
   "bin": {
