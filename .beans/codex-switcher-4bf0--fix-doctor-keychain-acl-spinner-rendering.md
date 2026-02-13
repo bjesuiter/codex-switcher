@@ -1,29 +1,18 @@
 ---
 # codex-switcher-4bf0
 title: Fix doctor keychain ACL spinner rendering
-status: in-progress
+status: completed
 type: bug
+priority: normal
 created_at: 2026-02-13T22:19:31Z
-updated_at: 2026-02-13T22:19:31Z
+updated_at: 2026-02-13T22:21:14Z
 ---
 
-Auth files:
-  OpenCode: active: bjesuiter@gmail.com
-    Path: /Users/bjesuiter/.local/share/opencode/auth.json
-  Codex CLI: active: bjesuiter@gmail.com
-    Path: /Users/bjesuiter/.codex/auth.json
-  Pi Agent: active: bjesuiter@gmail.com
-    Path: /Users/bjesuiter/.pi/agent/auth.json
+`cdx doctor` keychain ACL spinner currently appears only after checks finish because ACL retrieval blocks the event loop. Make spinner render during check execution.
 
-Capabilities:
-  Platform: darwin
-  Path profile: xdg
-  Secret store: macOS Keychain (cross-keychain) — available
-  Browser launcher: open — available
+## Summary of Changes
 
-Keychain ACL checks:
-  Runtime executable: /Users/bjesuiter/.bun/bin/bun
-[?25l│
-◇  Keychain ACL checks complete.
-[?25h  bjesuiter@gmail.com: runtime is in trusted apps
-  work.bjesuiter@gmail.com: runtime is in trusted apps keychain ACL spinner currently appears only after checks finish because ACL retrieval blocks the event loop. Make spinner render during check execution.
+- Added non-blocking `runSecuritySafeAsync(...)` in `lib/keychain.ts` using `Bun.spawn`.
+- Added `getKeychainDecryptAccessByServiceAsync(...)` in `lib/keychain-acl.ts`.
+- Updated `cdx doctor` to await the async keychain ACL fetch while the spinner is active.
+- Verified behavior by running `bun run cdx.ts doctor`; spinner now animates during ACL checks instead of rendering only at completion.

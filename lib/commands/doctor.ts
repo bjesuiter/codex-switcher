@@ -3,7 +3,7 @@ import * as p from "@clack/prompts";
 import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
-import { getKeychainDecryptAccessByService } from "../keychain-acl";
+import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
 import { getSecretStoreAdapter } from "../secrets/store";
 import { exitWithCommandError } from "./errors";
 
@@ -95,7 +95,7 @@ export const registerDoctorCommand = (program: Command): void => {
             aclSpinner.start(
               `Checking keychain ACLs for ${accountsWithSecrets.length} ${accountWord}...`,
             );
-            const decryptAccessByService = getKeychainDecryptAccessByService(services);
+            const decryptAccessByService = await getKeychainDecryptAccessByServiceAsync(services);
             aclSpinner.stop("Keychain ACL checks complete.");
 
             for (const account of accountsWithSecrets) {

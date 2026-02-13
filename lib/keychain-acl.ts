@@ -1,4 +1,4 @@
-import { runSecuritySafe } from "./keychain";
+import { runSecuritySafe, runSecuritySafeAsync } from "./keychain";
 
 export type KeychainDecryptAccessMode = "explicit-list" | "all-apps" | "missing";
 
@@ -124,6 +124,24 @@ export const getKeychainDecryptAccessByService = (
   }
 
   const dumpResult = runSecuritySafe(["dump-keychain", "-a"]);
+  if (!dumpResult.success) {
+    return defaultResult;
+  }
+
+  return parseKeychainDecryptAccessFromDump(dumpResult.output, dedupedServices);
+};
+
+export const getKeychainDecryptAccessByServiceAsync = async (
+  services: string[],
+): Promise<Map<string, KeychainDecryptAccessInfo>> => {
+  const dedupedServices = [...new Set(services.filter((service) => service.length > 0))];
+  const defaultResult = getDefaultMap(dedupedServices);
+
+  if (process.platform !== "darwin" || dedupedServices.length === 0) {
+    return defaultResult;
+  }
+
+  const dumpResult = await runSecuritySafeAsync(["dump-keychain", "-a"]);
   if (!dumpResult.success) {
     return defaultResult;
   }
