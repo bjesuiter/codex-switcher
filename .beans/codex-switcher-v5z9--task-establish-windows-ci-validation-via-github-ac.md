@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-02-13T13:09:37Z
-updated_at: 2026-02-13T20:24:58Z
+updated_at: 2026-02-13T20:32:16Z
 parent: codex-switcher-zky5
 blocked_by:
     - codex-switcher-8j5t
@@ -47,3 +47,13 @@ Fixing GitHub Actions parse error in `ci.yml` caused by matrix expression usage 
 - Replaced dynamic `shell: ${{ matrix.shell }}` usage with per-shell conditional steps.
 - Added explicit static shell steps for `pwsh`, `cmd`, and `bash` in Windows smoke tests.
 - This removes the GitHub parser error and keeps the same smoke coverage.
+
+## Windows path assertions fix
+
+Updating path-related tests to use platform-aware path joining so they pass consistently on Windows runners.
+
+## Windows path assertions fix completion
+
+- Updated `lib/platform/path-resolver.test.ts` to use `path.join(...)` for XDG and `PI_CODING_AGENT_DIR` expectations.
+- Updated `lib/paths.test.ts` to assert PI override using `path.join(...)` instead of hardcoded POSIX separators.
+- Verified with: `bun test lib/platform/path-resolver.test.ts lib/paths.test.ts`.

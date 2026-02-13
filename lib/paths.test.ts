@@ -26,7 +26,7 @@ describe("paths", () => {
     process.env.PI_CODING_AGENT_DIR = "/tmp/pi-coding-agent";
     resetPaths();
 
-    expect(getPaths().piAuthPath).toBe("/tmp/pi-coding-agent/auth.json");
+    expect(getPaths().piAuthPath).toBe(path.join("/tmp/pi-coding-agent", "auth.json"));
   });
 
   it("returns runtime path resolution metadata", () => {
