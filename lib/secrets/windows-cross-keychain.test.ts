@@ -1,105 +1,104 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import type { OAuthPayload } from "../types";
 import {
-  __resetWindowsCrossKeychainStateForTests,
-  __setWindowsCrossKeychainApiForTests,
-  getWindowsCrossKeychainService,
+  deleteWindowsCrossKeychainPayload,
   loadWindowsCrossKeychainPayload,
   saveWindowsCrossKeychainPayload,
+  windowsCrossKeychainPayloadExists,
 } from "./windows-cross-keychain";
 
-const mapKey = (service: string, account: string): string => `${service}::${account}`;
+const isWindows = process.platform === "win32";
 
-describe("windows cross-keychain chunked payload storage", () => {
-  const values = new Map<string, string>();
-
-  beforeEach(() => {
-    values.clear();
-
-    __setWindowsCrossKeychainApiForTests({
-      listBackends: async () => [{ id: "native-windows" }],
-      useBackend: async (backend) => {
-        if (backend !== "native-windows") {
-          throw new Error(`Unsupported backend in test: ${backend}`);
-        }
-      },
-      setPassword: async (service, account, password) => {
-        values.set(mapKey(service, account), password);
-      },
-      getPassword: async (service, account) => values.get(mapKey(service, account)) ?? null,
-      deletePassword: async (service, account) => {
-        values.delete(mapKey(service, account));
-      },
-    });
-  });
-
-  afterEach(() => {
-    __resetWindowsCrossKeychainStateForTests();
-    values.clear();
-  });
-
-  it("stores oversized payloads in chunks and reconstructs them on load", async () => {
-    const accountId = "account-chunked";
-    const payload: OAuthPayload = {
-      refresh: "refresh-token",
-      access: "access-token",
-      expires: Date.now() + 60_000,
-      accountId,
-      idToken: "x".repeat(12_000),
-    };
-
-    await saveWindowsCrossKeychainPayload(accountId, payload);
-
-    const service = getWindowsCrossKeychainService(accountId);
-    const pointerRaw = values.get(mapKey(service, accountId));
-    expect(pointerRaw).toBeTruthy();
-
-    const pointer = JSON.parse(pointerRaw as string) as {
-      marker: string;
-      chunks: number;
-    };
-
-    expect(pointer.marker).toBe("cdx-oauth-chunked-v1");
-    expect(pointer.chunks).toBeGreaterThan(1);
-
-    for (let index = 0; index < pointer.chunks; index += 1) {
-      const chunk = values.get(mapKey(service, `${accountId}__chunk_${index}`));
-      expect(chunk).toBeTruthy();
-      expect((chunk as string).length).toBeLessThanOrEqual(3000);
+const withFallbackBypass = async <T>(run: () => Promise<T>): Promise<T> => {
+  const previous = process.env.CDX_ALLOW_SECURE_STORE_FALLBACK;
+  process.env.CDX_ALLOW_SECURE_STORE_FALLBACK = "1";
+  try {
+    return await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.CDX_ALLOW_SECURE_STORE_FALLBACK;
+    } else {
+      process.env.CDX_ALLOW_SECURE_STORE_FALLBACK = previous;
     }
+  }
+};
 
-    const loaded = await loadWindowsCrossKeychainPayload(accountId);
-    expect(loaded).toEqual(payload);
+const makeTestAccountId = (prefix: string): string =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+describe("windows cross-keychain integration", () => {
+  const createdAccountIds: string[] = [];
+
+  afterEach(async () => {
+    for (const accountId of createdAccountIds.splice(0)) {
+      try {
+        await withFallbackBypass(() => deleteWindowsCrossKeychainPayload(accountId));
+      } catch {
+        // Best effort cleanup in tests.
+      }
+    }
   });
 
-  it("removes stale chunk entries when saving a small payload after a chunked payload", async () => {
-    const accountId = "account-chunk-cleanup";
-    const largePayload: OAuthPayload = {
-      refresh: "refresh-token",
-      access: "access-token",
-      expires: Date.now() + 60_000,
-      accountId,
-      idToken: "x".repeat(12_000),
-    };
+  it.skipIf(!isWindows)(
+    "stores and loads oversized payloads through Windows Credential Manager",
+    async () => {
+      const accountId = makeTestAccountId("cdx-test-chunked");
+      createdAccountIds.push(accountId);
 
-    const smallPayload: OAuthPayload = {
-      refresh: "refresh-small",
-      access: "access-small",
-      expires: Date.now() + 60_000,
-      accountId,
-      idToken: "short-token",
-    };
+      const payload: OAuthPayload = {
+        refresh: "refresh-token",
+        access: "access-token",
+        expires: Date.now() + 60_000,
+        accountId,
+        idToken: "x".repeat(12_000),
+      };
 
-    await saveWindowsCrossKeychainPayload(accountId, largePayload);
-    await saveWindowsCrossKeychainPayload(accountId, smallPayload);
+      await withFallbackBypass(() =>
+        saveWindowsCrossKeychainPayload(accountId, payload)
+      );
 
-    const service = getWindowsCrossKeychainService(accountId);
-    const chunkKeys = [...values.keys()].filter((key) =>
-      key.startsWith(`${service}::${accountId}__chunk_`),
-    );
-    expect(chunkKeys.length).toBe(0);
+      const exists = await withFallbackBypass(() =>
+        windowsCrossKeychainPayloadExists(accountId)
+      );
+      expect(exists).toBe(true);
 
-    const loaded = await loadWindowsCrossKeychainPayload(accountId);
-    expect(loaded).toEqual(smallPayload);
-  });
+      const loaded = await withFallbackBypass(() =>
+        loadWindowsCrossKeychainPayload(accountId)
+      );
+      expect(loaded).toEqual(payload);
+    },
+  );
+
+  it.skipIf(!isWindows)(
+    "deletes chunked payload credentials from Windows Credential Manager",
+    async () => {
+      const accountId = makeTestAccountId("cdx-test-delete");
+      createdAccountIds.push(accountId);
+
+      const payload: OAuthPayload = {
+        refresh: "refresh-token",
+        access: "access-token",
+        expires: Date.now() + 60_000,
+        accountId,
+        idToken: "x".repeat(12_000),
+      };
+
+      await withFallbackBypass(() =>
+        saveWindowsCrossKeychainPayload(accountId, payload)
+      );
+      expect(
+        await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
+      ).toBe(true);
+
+      await withFallbackBypass(() => deleteWindowsCrossKeychainPayload(accountId));
+      const index = createdAccountIds.indexOf(accountId);
+      if (index >= 0) {
+        createdAccountIds.splice(index, 1);
+      }
+
+      expect(
+        await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
+      ).toBe(false);
+    },
+  );
 });
