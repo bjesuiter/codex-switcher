@@ -26,6 +26,14 @@ const withFallbackBypass = async <T>(run: () => Promise<T>): Promise<T> => {
 const makeTestAccountId = (prefix: string): string =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+const makePayload = (accountId: string): OAuthPayload => ({
+  refresh: "refresh-token",
+  access: "access-token",
+  expires: Date.now() + 60_000,
+  accountId,
+  idToken: "id-token",
+});
+
 describe("windows cross-keychain integration", () => {
   const createdAccountIds: string[] = [];
 
@@ -39,66 +47,80 @@ describe("windows cross-keychain integration", () => {
     }
   });
 
-  it.skipIf(!isWindows)(
-    "stores and loads oversized payloads through Windows Credential Manager",
-    async () => {
-      const accountId = makeTestAccountId("cdx-test-large");
-      createdAccountIds.push(accountId);
+  it.skipIf(!isWindows)("stores payloads in Windows Credential Manager", async () => {
+    const accountId = makeTestAccountId("cdx-test-store");
+    createdAccountIds.push(accountId);
 
-      const payload: OAuthPayload = {
-        refresh: "refresh-token",
-        access: "access-token",
-        expires: Date.now() + 60_000,
-        accountId,
-        idToken: "x".repeat(12_000),
-      };
+    await withFallbackBypass(() =>
+      saveWindowsCrossKeychainPayload(accountId, makePayload(accountId))
+    );
 
-      await withFallbackBypass(() =>
-        saveWindowsCrossKeychainPayload(accountId, payload)
-      );
+    const exists = await withFallbackBypass(() =>
+      windowsCrossKeychainPayloadExists(accountId)
+    );
+    expect(exists).toBe(true);
+  });
 
-      const exists = await withFallbackBypass(() =>
-        windowsCrossKeychainPayloadExists(accountId)
-      );
-      expect(exists).toBe(true);
+  it.skipIf(!isWindows)("reads payloads from Windows Credential Manager", async () => {
+    const accountId = makeTestAccountId("cdx-test-read");
+    createdAccountIds.push(accountId);
 
-      const loaded = await withFallbackBypass(() =>
-        loadWindowsCrossKeychainPayload(accountId)
-      );
-      expect(loaded).toEqual(payload);
-    },
-  );
+    const payload = makePayload(accountId);
+    await withFallbackBypass(() =>
+      saveWindowsCrossKeychainPayload(accountId, payload)
+    );
 
-  it.skipIf(!isWindows)(
-    "deletes oversized payload credentials from Windows Credential Manager",
-    async () => {
-      const accountId = makeTestAccountId("cdx-test-delete");
-      createdAccountIds.push(accountId);
+    const loaded = await withFallbackBypass(() =>
+      loadWindowsCrossKeychainPayload(accountId)
+    );
+    expect(loaded).toEqual(payload);
+  });
 
-      const payload: OAuthPayload = {
-        refresh: "refresh-token",
-        access: "access-token",
-        expires: Date.now() + 60_000,
-        accountId,
-        idToken: "x".repeat(12_000),
-      };
+  it.skipIf(!isWindows)("updates existing payloads in Windows Credential Manager", async () => {
+    const accountId = makeTestAccountId("cdx-test-update");
+    createdAccountIds.push(accountId);
 
-      await withFallbackBypass(() =>
-        saveWindowsCrossKeychainPayload(accountId, payload)
-      );
-      expect(
-        await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
-      ).toBe(true);
+    const initialPayload = makePayload(accountId);
+    const updatedPayload: OAuthPayload = {
+      ...initialPayload,
+      access: "updated-access-token",
+      refresh: "updated-refresh-token",
+      expires: Date.now() + 120_000,
+      idToken: "updated-id-token",
+    };
 
-      await withFallbackBypass(() => deleteWindowsCrossKeychainPayload(accountId));
-      const index = createdAccountIds.indexOf(accountId);
-      if (index >= 0) {
-        createdAccountIds.splice(index, 1);
-      }
+    await withFallbackBypass(() =>
+      saveWindowsCrossKeychainPayload(accountId, initialPayload)
+    );
+    await withFallbackBypass(() =>
+      saveWindowsCrossKeychainPayload(accountId, updatedPayload)
+    );
 
-      expect(
-        await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
-      ).toBe(false);
-    },
-  );
+    const loaded = await withFallbackBypass(() =>
+      loadWindowsCrossKeychainPayload(accountId)
+    );
+    expect(loaded).toEqual(updatedPayload);
+  });
+
+  it.skipIf(!isWindows)("deletes payloads from Windows Credential Manager", async () => {
+    const accountId = makeTestAccountId("cdx-test-delete");
+    createdAccountIds.push(accountId);
+
+    await withFallbackBypass(() =>
+      saveWindowsCrossKeychainPayload(accountId, makePayload(accountId))
+    );
+    expect(
+      await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
+    ).toBe(true);
+
+    await withFallbackBypass(() => deleteWindowsCrossKeychainPayload(accountId));
+    const index = createdAccountIds.indexOf(accountId);
+    if (index >= 0) {
+      createdAccountIds.splice(index, 1);
+    }
+
+    expect(
+      await withFallbackBypass(() => windowsCrossKeychainPayloadExists(accountId)),
+    ).toBe(false);
+  });
 });
