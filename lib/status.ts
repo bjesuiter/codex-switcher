@@ -103,20 +103,20 @@ const readPiAuthAccount = async (): Promise<AuthFileStatus> => {
   }
 };
 
-const getAccountStatus = (
+const getAccountStatus = async (
   accountId: string,
   isCurrent: boolean,
   label?: string,
-): AccountStatus => {
+): Promise<AccountStatus> => {
   const secretStore = getSecretStoreAdapter();
-  const keychainExists = secretStore.exists(accountId);
+  const keychainExists = await secretStore.exists(accountId);
 
   let expiresAt: number | null = null;
   let hasIdToken = false;
 
   if (keychainExists) {
     try {
-      const payload: OAuthPayload = secretStore.load(accountId);
+      const payload: OAuthPayload = await secretStore.load(accountId);
       expiresAt = payload.expires;
       hasIdToken = !!payload.idToken;
     } catch {
@@ -142,7 +142,7 @@ export const getStatus = async (): Promise<StatusInfo> => {
     for (let i = 0; i < config.accounts.length; i++) {
       const account = config.accounts[i];
       accounts.push(
-        getAccountStatus(account.accountId, i === config.current, account.label),
+        await getAccountStatus(account.accountId, i === config.current, account.label),
       );
     }
   }

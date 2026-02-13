@@ -32,9 +32,9 @@ export const registerReloginCommand = (program: Command): void => {
           let expiryState = "unknown";
           let keychainState = "";
           const secretStore = getSecretStoreAdapter();
-          if (secretStore.exists(target.accountId)) {
+          if (await secretStore.exists(target.accountId)) {
             try {
-              const payload = secretStore.load(target.accountId);
+              const payload = await secretStore.load(target.accountId);
               expiryState = formatExpiry(payload.expires);
             } catch {
               expiryState = "unknown";

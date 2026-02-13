@@ -41,7 +41,7 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 
 ## Requirements
 
-- macOS (uses Keychain via the `security` command) **or** Windows (uses Windows Credential Manager via PowerShell)
+- macOS (uses Keychain) **or** Windows (uses Windows Credential Manager)
 - [Bun](https://bun.sh) runtime
 
 ## Install

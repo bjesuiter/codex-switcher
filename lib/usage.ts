@@ -65,7 +65,7 @@ export const fetchUsage = async (
 
   let payload: OAuthPayload;
   try {
-    payload = secretStore.load(accountId);
+    payload = await secretStore.load(accountId);
   } catch (err) {
     return {
       ok: false,
@@ -98,7 +98,7 @@ export const fetchUsage = async (
         expires: refreshResult.expires,
         idToken: refreshResult.idToken ?? payload.idToken,
       };
-      secretStore.save(accountId, updatedPayload);
+      await secretStore.save(accountId, updatedPayload);
 
       response = await fetchUsageRaw(updatedPayload.access, updatedPayload.accountId);
       if (!response.ok) {

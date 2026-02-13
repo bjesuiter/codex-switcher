@@ -14,9 +14,9 @@ describe("createRuntimeSecretStoreAdapter", () => {
     expect(adapter.getCapability().available).toBe(false);
   });
 
-  it("selects Windows Credential Manager adapter for win32", () => {
+  it("selects cross-keychain Windows adapter for win32", () => {
     const adapter = createRuntimeSecretStoreAdapter("win32");
-    expect(adapter.id).toBe("windows-credential-manager");
+    expect(adapter.id).toBe("windows-cross-keychain");
     expect(adapter.getCapability().available).toBe(true);
   });
 });

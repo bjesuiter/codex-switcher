@@ -6,15 +6,15 @@ import {
   loadKeychainPayload,
   saveKeychainPayload,
 } from "../keychain";
+import { configExists, loadConfig } from "../config";
 import type { OAuthPayload } from "../types";
 import {
-  deleteWindowsCredentialPayload,
-  getWindowsCredentialService,
-  listWindowsCredentialAccounts,
-  loadWindowsCredentialPayload,
-  saveWindowsCredentialPayload,
-  windowsCredentialPayloadExists,
-} from "../windows-credential";
+  deleteWindowsCrossKeychainPayload,
+  getWindowsCrossKeychainService,
+  loadWindowsCrossKeychainPayload,
+  saveWindowsCrossKeychainPayload,
+  windowsCrossKeychainPayloadExists,
+} from "./windows-cross-keychain";
 
 export type SecretStoreCapability = {
   available: boolean;
@@ -25,11 +25,11 @@ export type SecretStoreAdapter = {
   id: string;
   label: string;
   getServiceName(accountId: string): string;
-  save(accountId: string, payload: OAuthPayload): void;
-  load(accountId: string): OAuthPayload;
-  delete(accountId: string): void;
-  exists(accountId: string): boolean;
-  listAccountIds(): string[];
+  save(accountId: string, payload: OAuthPayload): Promise<void>;
+  load(accountId: string): Promise<OAuthPayload>;
+  delete(accountId: string): Promise<void>;
+  exists(accountId: string): Promise<boolean>;
+  listAccountIds(): Promise<string[]>;
   getCapability(): SecretStoreCapability;
 };
 
@@ -43,23 +43,45 @@ const createMacOSKeychainAdapter = (): SecretStoreAdapter => ({
   id: "macos-keychain",
   label: "macOS Keychain",
   getServiceName: getKeychainService,
-  save: saveKeychainPayload,
-  load: loadKeychainPayload,
-  delete: deleteKeychainPayload,
-  exists: keychainPayloadExists,
-  listAccountIds: listKeychainAccounts,
+  save: async (accountId: string, payload: OAuthPayload) => {
+    saveKeychainPayload(accountId, payload);
+  },
+  load: async (accountId: string) => loadKeychainPayload(accountId),
+  delete: async (accountId: string) => {
+    deleteKeychainPayload(accountId);
+  },
+  exists: async (accountId: string) => keychainPayloadExists(accountId),
+  listAccountIds: async () => listKeychainAccounts(),
   getCapability: () => ({ available: true }),
 });
 
-const createWindowsCredentialManagerAdapter = (): SecretStoreAdapter => ({
-  id: "windows-credential-manager",
-  label: "Windows Credential Manager",
-  getServiceName: getWindowsCredentialService,
-  save: saveWindowsCredentialPayload,
-  load: loadWindowsCredentialPayload,
-  delete: deleteWindowsCredentialPayload,
-  exists: windowsCredentialPayloadExists,
-  listAccountIds: listWindowsCredentialAccounts,
+const loadConfiguredAccountIds = async (): Promise<string[]> => {
+  if (!configExists()) {
+    return [];
+  }
+
+  const config = await loadConfig();
+  return config.accounts.map((account) => account.accountId);
+};
+
+const createWindowsCrossKeychainAdapter = (): SecretStoreAdapter => ({
+  id: "windows-cross-keychain",
+  label: "Windows Credential Manager (cross-keychain)",
+  getServiceName: getWindowsCrossKeychainService,
+  save: saveWindowsCrossKeychainPayload,
+  load: loadWindowsCrossKeychainPayload,
+  delete: deleteWindowsCrossKeychainPayload,
+  exists: windowsCrossKeychainPayloadExists,
+  listAccountIds: async () => {
+    const accountIds = await loadConfiguredAccountIds();
+    const existing = await Promise.all(
+      accountIds.map(async (accountId) => ({
+        accountId,
+        exists: await windowsCrossKeychainPayloadExists(accountId),
+      })),
+    );
+    return existing.filter((item) => item.exists).map((item) => item.accountId);
+  },
   getCapability: () => ({ available: true }),
 });
 
@@ -69,17 +91,17 @@ const createUnsupportedAdapter = (
   id: "unsupported",
   label: "Unsupported (no adapter configured)",
   getServiceName: (accountId: string) => `cdx-openai-${accountId}`,
-  save: () => {
+  save: async () => {
     throw unsupportedError(platform);
   },
-  load: () => {
+  load: async () => {
     throw unsupportedError(platform);
   },
-  delete: () => {
+  delete: async () => {
     throw unsupportedError(platform);
   },
-  exists: () => false,
-  listAccountIds: () => [],
+  exists: async () => false,
+  listAccountIds: async () => [],
   getCapability: () => ({
     available: false,
     reason: "No default secure-store adapter available for this platform.",
@@ -94,7 +116,7 @@ export const createRuntimeSecretStoreAdapter = (
   }
 
   if (platform === "win32") {
-    return createWindowsCredentialManagerAdapter();
+    return createWindowsCrossKeychainAdapter();
   }
 
   return createUnsupportedAdapter(platform);
