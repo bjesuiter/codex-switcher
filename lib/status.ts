@@ -6,7 +6,10 @@ import {
   type RuntimeCapabilities,
 } from "./platform/capabilities";
 import { getPaths } from "./paths";
-import { getSecretStoreAdapter } from "./secrets/store";
+import {
+  getSecretStoreAdapter,
+  isMissingSecretStoreEntryError,
+} from "./secrets/store";
 import type { OAuthPayload } from "./types";
 
 export type AccountStatus = {
@@ -109,18 +112,18 @@ const getAccountStatus = async (
   label?: string,
 ): Promise<AccountStatus> => {
   const secretStore = getSecretStoreAdapter();
-  const secureStoreExists = await secretStore.exists(accountId);
 
+  let secureStoreExists = false;
   let expiresAt: number | null = null;
   let hasIdToken = false;
 
-  if (secureStoreExists) {
-    try {
-      const payload: OAuthPayload = await secretStore.load(accountId);
-      expiresAt = payload.expires;
-      hasIdToken = !!payload.idToken;
-    } catch {
-    }
+  try {
+    const payload: OAuthPayload = await secretStore.load(accountId);
+    secureStoreExists = true;
+    expiresAt = payload.expires;
+    hasIdToken = !!payload.idToken;
+  } catch (error) {
+    secureStoreExists = !isMissingSecretStoreEntryError(error);
   }
 
   return {

@@ -143,6 +143,13 @@ Interactive mode:
 cdx
 ```
 
+Use the legacy macOS keychain implementation (if needed):
+
+```bash
+cdx --secret-store legacy-keychain switch
+cdx --secret-store legacy-keychain status
+```
+
 ## Commands
 
 | Command | Description |
@@ -164,6 +171,7 @@ cdx
 | `cdx version` | Show CLI version |
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
+| `cdx --secret-store legacy-keychain <command>` | Use legacy macOS keychain backend for that run |
 
 ## How It Works
 
@@ -172,6 +180,8 @@ cdx
 - **macOS:** macOS Keychain
 - **Windows:** Windows Credential Manager
 - **Linux:** Secret Service/keyring
+- Default backend selection is automatic (`--secret-store auto`).
+- On macOS, you can force the legacy backend for a single run with `--secret-store legacy-keychain`.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
 

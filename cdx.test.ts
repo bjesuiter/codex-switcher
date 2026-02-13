@@ -52,6 +52,7 @@ describe("cdx CLI", () => {
       expect(output).toContain("doctor");
       expect(output).toContain("--help");
       expect(output).toContain("--version");
+      expect(output).toContain("--secret-store");
     });
 
     it("shows version with --version flag", async () => {
@@ -63,6 +64,18 @@ describe("cdx CLI", () => {
 
       const output = result.stdout.toString().trim();
       expect(output).toBe(pkg.version);
+    });
+
+    it("rejects invalid --secret-store values", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "--secret-store", "invalid", "version"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const stderr = result.stderr.toString();
+      expect(result.exitCode).toBe(1);
+      expect(stderr).toContain("Invalid value 'invalid' for --secret-store");
     });
 
     it("exits non-zero when login fails", async () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import pkg from "./package.json";
 import { exitWithCommandError } from "./lib/commands/errors";
 import {
@@ -16,6 +16,12 @@ import {
   type LoginDeps,
 } from "./lib/commands";
 import { runInteractiveMode } from "./lib/interactive";
+import {
+  createSecretStoreAdapterFromSelection,
+  resetSecretStoreAdapter,
+  setSecretStoreAdapter,
+  type SecretStoreSelection,
+} from "./lib/secrets/store";
 
 export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
@@ -23,15 +29,27 @@ export { writeAuthFile, writeCodexAuthFile, writePiAuthFile, writeAllAuthFiles }
 export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
 export {
   createRuntimeSecretStoreAdapter,
+  createSecretStoreAdapterFromSelection,
   getSecretStoreAdapter,
   resetSecretStoreAdapter,
   setSecretStoreAdapter,
   type SecretStoreAdapter,
+  type SecretStoreSelection,
 } from "./lib/secrets/store";
 export { runInteractiveMode } from "./lib/interactive";
 export { switchNext, switchToAccount } from "./lib/commands";
 
 export const interactiveMode = runInteractiveMode;
+
+const parseSecretStoreSelection = (value: string): SecretStoreSelection => {
+  if (value === "auto" || value === "legacy-keychain") {
+    return value;
+  }
+
+  throw new InvalidArgumentError(
+    `Invalid value '${value}' for --secret-store. Allowed values: auto, legacy-keychain.`,
+  );
+};
 
 export const createProgram = (
   deps: LoginDeps = {},
@@ -43,7 +61,24 @@ export const createProgram = (
     .description(
       "OpenAI account switcher - manage multiple OpenAI Pro subscriptions",
     )
-    .version(pkg.version, "-v, --version");
+    .version(pkg.version, "-v, --version")
+    .option(
+      "--secret-store <mode>",
+      "Select secret-store backend (auto|legacy-keychain)",
+      parseSecretStoreSelection,
+      "auto",
+    );
+
+  program.hook("preAction", (_thisCommand, actionCommand) => {
+    const options = actionCommand.optsWithGlobals() as { secretStore?: SecretStoreSelection };
+    const selection = options.secretStore ?? "auto";
+    const adapter = createSecretStoreAdapterFromSelection(selection);
+    setSecretStoreAdapter(adapter);
+  });
+
+  program.hook("postAction", () => {
+    resetSecretStoreAdapter();
+  });
 
   registerLoginCommand(program, deps);
   registerReloginCommand(program);
