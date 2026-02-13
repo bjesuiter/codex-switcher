@@ -8,10 +8,10 @@ describe("createRuntimeSecretStoreAdapter", () => {
     expect(adapter.getCapability().available).toBe(true);
   });
 
-  it("uses unsupported adapter for linux", () => {
+  it("selects cross-keychain Linux adapter for linux", () => {
     const adapter = createRuntimeSecretStoreAdapter("linux");
-    expect(adapter.id).toBe("unsupported");
-    expect(adapter.getCapability().available).toBe(false);
+    expect(adapter.id).toBe("linux-cross-keychain");
+    expect(adapter.getCapability().available).toBe(true);
   });
 
   it("selects cross-keychain Windows adapter for win32", () => {

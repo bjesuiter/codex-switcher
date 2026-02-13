@@ -9,9 +9,9 @@ import type { OAuthPayload } from "../types";
 import { ensureFallbackConsent } from "./fallback-consent";
 
 const SERVICE_PREFIX = "cdx-openai-";
-const WINDOWS_FALLBACK_SCOPE = "win32:cross-keychain:windows";
+const LINUX_FALLBACK_SCOPE = "linux:cross-keychain:secret-service";
 
-type BackendId = "native-windows" | "windows";
+type BackendId = "native-linux" | "secret-service";
 
 let backendInitPromise: Promise<void> | null = null;
 let selectedBackend: BackendId | null = null;
@@ -29,26 +29,26 @@ const selectBackend = async (): Promise<BackendId> => {
   const backends = await listBackends();
   const available = new Set(backends.map((backend) => backend.id));
 
-  if (available.has("native-windows") && (await tryUseBackend("native-windows"))) {
-    return "native-windows";
+  if (available.has("native-linux") && (await tryUseBackend("native-linux"))) {
+    return "native-linux";
   }
 
-  if (available.has("windows") && (await tryUseBackend("windows"))) {
-    return "windows";
+  if (available.has("secret-service") && (await tryUseBackend("secret-service"))) {
+    return "secret-service";
   }
 
-  if (await tryUseBackend("native-windows")) {
-    return "native-windows";
+  if (await tryUseBackend("native-linux")) {
+    return "native-linux";
   }
 
-  if (await tryUseBackend("windows")) {
-    return "windows";
+  if (await tryUseBackend("secret-service")) {
+    return "secret-service";
   }
 
-  throw new Error("Unable to initialize Windows credential backend via cross-keychain.");
+  throw new Error("Unable to initialize Linux secure-store backend via cross-keychain.");
 };
 
-const ensureWindowsBackend = async (
+const ensureLinuxBackend = async (
   options: { forWrite?: boolean } = {},
 ): Promise<void> => {
   if (!backendInitPromise) {
@@ -62,20 +62,20 @@ const ensureWindowsBackend = async (
   } catch {
     backendInitPromise = null;
     selectedBackend = null;
-    throw new Error("Unable to initialize Windows credential backend via cross-keychain.");
+    throw new Error("Unable to initialize Linux secure-store backend via cross-keychain.");
   }
 
-  if (options.forWrite && selectedBackend === "windows") {
+  if (options.forWrite && selectedBackend === "secret-service") {
     await ensureFallbackConsent(
-      WINDOWS_FALLBACK_SCOPE,
-      "⚠ Security warning: only the cross-keychain Windows fallback backend is available.\n" +
-        "This path runs a PowerShell helper to access Windows Credential Manager.\n" +
-        "Compared to native bindings, secrets may be more exposed to process inspection/logging while the helper runs.",
+      LINUX_FALLBACK_SCOPE,
+      "⚠ Security warning: only the cross-keychain Linux fallback backend is available.\n" +
+        "This path relies on shell-based `secret-tool` operations for Secret Service access.\n" +
+        "Compared to native bindings, secrets may be more exposed to process inspection/logging while helper commands run.",
     );
   }
 };
 
-export const getWindowsCrossKeychainService = (accountId: string): string =>
+export const getLinuxCrossKeychainService = (accountId: string): string =>
   `${SERVICE_PREFIX}${accountId}`;
 
 const parsePayload = (accountId: string, raw: string): OAuthPayload => {
@@ -98,11 +98,11 @@ const withService = async <T>(
   run: (service: string) => Promise<T>,
   options: { forWrite?: boolean } = {},
 ): Promise<T> => {
-  await ensureWindowsBackend(options);
-  return run(getWindowsCrossKeychainService(accountId));
+  await ensureLinuxBackend(options);
+  return run(getLinuxCrossKeychainService(accountId));
 };
 
-export const saveWindowsCrossKeychainPayload = async (
+export const saveLinuxCrossKeychainPayload = async (
   accountId: string,
   payload: OAuthPayload,
 ): Promise<void> => withService(
@@ -111,13 +111,10 @@ export const saveWindowsCrossKeychainPayload = async (
   { forWrite: true },
 );
 
-export const loadWindowsCrossKeychainPayload = async (
+export const loadLinuxCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
-  const raw = await withService(
-    accountId,
-    (service) => getPassword(service, accountId),
-  );
+  const raw = await withService(accountId, (service) => getPassword(service, accountId));
 
   if (raw === null) {
     throw new Error(`No stored credentials found for account ${accountId}.`);
@@ -126,11 +123,11 @@ export const loadWindowsCrossKeychainPayload = async (
   return parsePayload(accountId, raw);
 };
 
-export const deleteWindowsCrossKeychainPayload = async (
+export const deleteLinuxCrossKeychainPayload = async (
   accountId: string,
 ): Promise<void> => withService(accountId, (service) => deletePassword(service, accountId));
 
-export const windowsCrossKeychainPayloadExists = async (
+export const linuxCrossKeychainPayloadExists = async (
   accountId: string,
 ): Promise<boolean> => withService(
   accountId,

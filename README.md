@@ -41,7 +41,7 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 
 ## Requirements
 
-- macOS (uses Keychain) **or** Windows (uses Windows Credential Manager)
+- macOS (uses Keychain), Windows (uses Windows Credential Manager), **or** Linux (uses Secret Service/keyring)
 - [Bun](https://bun.sh) runtime
 
 ## Install
@@ -135,6 +135,8 @@ Running `cdx` without arguments opens an interactive menu to:
 ## How It Works
 
 - OAuth credentials are stored securely in macOS Keychain (macOS) or Windows Credential Manager (Windows)
+- If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
+  - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
 - Account list is stored in:
   - macOS/Linux: `~/.config/cdx/accounts.json`
   - Windows: `%APPDATA%\\cdx\\accounts.json`
