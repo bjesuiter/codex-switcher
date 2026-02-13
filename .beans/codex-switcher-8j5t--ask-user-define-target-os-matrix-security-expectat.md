@@ -1,11 +1,11 @@
 ---
 # codex-switcher-8j5t
 title: 'Ask user: define target OS matrix + security expectations'
-status: todo
+status: in-progress
 type: task
 priority: critical
 created_at: 2026-02-13T12:59:25Z
-updated_at: 2026-02-13T12:59:25Z
+updated_at: 2026-02-13T13:01:00Z
 parent: codex-switcher-zky5
 ---
 
