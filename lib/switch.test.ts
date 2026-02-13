@@ -5,9 +5,13 @@ import os from "node:os";
 import path from "node:path";
 import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile, writePiAuthFile } from "./auth";
 import { loadConfig, saveConfig } from "./config";
-import { deleteKeychainPayload, saveKeychainPayload } from "./keychain";
 import { createTestPaths, getPaths, resetPaths, setPaths } from "./paths";
 import { writeActiveAuthFilesIfCurrent } from "./refresh";
+import {
+  resetSecretStoreAdapter,
+  setSecretStoreAdapter,
+  type SecretStoreAdapter,
+} from "./secrets/store";
 import type { Config, OAuthPayload } from "./types";
 
 const TEST_ACCOUNT_1 = "switch-test-account-1-" + Date.now();
@@ -29,7 +33,37 @@ const TEST_PAYLOAD_2: OAuthPayload = {
   accountId: TEST_ACCOUNT_2,
 };
 
-describe.skipIf(!!process.env.CI)("switch command utilities", () => {
+const createInMemorySecretStoreAdapter = (
+  initialPayloads: OAuthPayload[] = [],
+): SecretStoreAdapter => {
+  const payloads = new Map<string, OAuthPayload>(
+    initialPayloads.map((payload) => [payload.accountId, payload]),
+  );
+
+  return {
+    id: "test-memory-secret-store",
+    label: "Test memory secret store",
+    getServiceName: (accountId: string) => `test-${accountId}`,
+    save: async (accountId: string, payload: OAuthPayload) => {
+      payloads.set(accountId, payload);
+    },
+    load: async (accountId: string) => {
+      const payload = payloads.get(accountId);
+      if (!payload) {
+        throw new Error(`No stored credentials found for account ${accountId}.`);
+      }
+      return payload;
+    },
+    delete: async (accountId: string) => {
+      payloads.delete(accountId);
+    },
+    exists: async (accountId: string) => payloads.has(accountId),
+    listAccountIds: async () => [...payloads.keys()],
+    getCapability: () => ({ available: true }),
+  };
+};
+
+describe("switch command utilities", () => {
   let testDir: string;
 
   beforeEach(() => {
@@ -39,8 +73,9 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
     const testPaths = createTestPaths(testDir);
     setPaths(testPaths);
 
-    saveKeychainPayload(TEST_ACCOUNT_1, TEST_PAYLOAD_1);
-    saveKeychainPayload(TEST_ACCOUNT_2, TEST_PAYLOAD_2);
+    setSecretStoreAdapter(
+      createInMemorySecretStoreAdapter([TEST_PAYLOAD_1, TEST_PAYLOAD_2]),
+    );
   });
 
   afterEach(() => {
@@ -49,18 +84,9 @@ describe.skipIf(!!process.env.CI)("switch command utilities", () => {
     } else {
       process.env.PI_CODING_AGENT_DIR = originalPiAgentDir;
     }
+    resetSecretStoreAdapter();
     resetPaths();
 
-    try {
-      deleteKeychainPayload(TEST_ACCOUNT_1);
-    } catch {
-      // Cleanup - ignore if not exists
-    }
-    try {
-      deleteKeychainPayload(TEST_ACCOUNT_2);
-    } catch {
-      // Cleanup - ignore if not exists
-    }
     try {
       rmSync(testDir, { recursive: true });
     } catch {

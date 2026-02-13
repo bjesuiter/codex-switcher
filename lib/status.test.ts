@@ -5,9 +5,43 @@ import os from "node:os";
 import path from "node:path";
 import { createTestPaths, resetPaths, setPaths } from "./paths";
 import { saveConfig } from "./config";
-import { saveKeychainPayload, deleteKeychainPayload } from "./keychain";
+import {
+  resetSecretStoreAdapter,
+  setSecretStoreAdapter,
+  type SecretStoreAdapter,
+} from "./secrets/store";
 import { formatExpiry, getStatus } from "./status";
 import type { OAuthPayload } from "./types";
+
+const createInMemorySecretStoreAdapter = (
+  initialPayloads: OAuthPayload[] = [],
+): SecretStoreAdapter => {
+  const payloads = new Map<string, OAuthPayload>(
+    initialPayloads.map((payload) => [payload.accountId, payload]),
+  );
+
+  return {
+    id: "test-memory-secret-store",
+    label: "Test memory secret store",
+    getServiceName: (accountId: string) => `test-${accountId}`,
+    save: async (accountId: string, payload: OAuthPayload) => {
+      payloads.set(accountId, payload);
+    },
+    load: async (accountId: string) => {
+      const payload = payloads.get(accountId);
+      if (!payload) {
+        throw new Error(`No stored credentials found for account ${accountId}.`);
+      }
+      return payload;
+    },
+    delete: async (accountId: string) => {
+      payloads.delete(accountId);
+    },
+    exists: async (accountId: string) => payloads.has(accountId),
+    listAccountIds: async () => [...payloads.keys()],
+    getCapability: () => ({ available: true }),
+  };
+};
 
 describe("formatExpiry", () => {
   it("shows 'unknown' for null", () => {
@@ -53,18 +87,22 @@ const REALISTIC_PI_AUTH_FIXTURE = {
   },
 };
 
-describe.skipIf(!!process.env.CI)("getStatus", () => {
+describe("getStatus", () => {
   let testDir: string;
+  let secretStore: SecretStoreAdapter;
 
   beforeEach(() => {
     testDir = path.join(os.tmpdir(), `cdx-status-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(testDir, { recursive: true });
     setPaths(createTestPaths(testDir));
+
+    secretStore = createInMemorySecretStoreAdapter();
+    setSecretStoreAdapter(secretStore);
   });
 
   afterEach(() => {
+    resetSecretStoreAdapter();
     resetPaths();
-    try { deleteKeychainPayload(TEST_ACCOUNT); } catch {}
     try { rmSync(testDir, { recursive: true }); } catch {}
   });
 
@@ -73,7 +111,7 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
     expect(status.accounts).toHaveLength(0);
   });
 
-  it("returns account status with keychain data", async () => {
+  it("returns account status with secure-store data", async () => {
     const payload: OAuthPayload = {
       refresh: "r",
       access: "a",
@@ -81,7 +119,7 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
       accountId: TEST_ACCOUNT,
       idToken: "id",
     };
-    saveKeychainPayload(TEST_ACCOUNT, payload);
+    await secretStore.save(TEST_ACCOUNT, payload);
 
     await saveConfig({
       current: 0,
@@ -98,7 +136,7 @@ describe.skipIf(!!process.env.CI)("getStatus", () => {
     expect(status.accounts[0].expiresIn).toMatch(/^expires in/);
   });
 
-  it("detects missing keychain entry", async () => {
+  it("detects missing secure-store entry", async () => {
     await saveConfig({
       current: 0,
       accounts: [{ accountId: "nonexistent-account", keychainService: "cdx-openai-nonexistent" }],
