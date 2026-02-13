@@ -82,9 +82,12 @@ export const registerDoctorCommand = (program: Command): void => {
         );
 
         if (process.platform === "darwin" && !options.checkKeychainAcl) {
+          process.stdout.write("  ┌─ Optional keychain ACL check\n");
+          process.stdout.write("  │  Run: cdx doctor --check-keychain-acl\n");
           process.stdout.write(
-            "  You can check whether your process is treated as trusted process by keychain by calling cdx doctor with --check-keychain-acl flag. This may take around 30 to 60 seconds\n",
+            "  │  Verifies whether your current runtime is trusted by Keychain.\n",
           );
+          process.stdout.write("  └─ Expected duration: ~30-60 seconds\n");
         }
 
         if (process.platform === "darwin" && options.checkKeychainAcl) {
