@@ -69,6 +69,28 @@ export const registerStatusCommand = (program: Command): void => {
           : "not found";
         process.stdout.write(`  Pi Agent: ${piStatus}\n`);
 
+        process.stdout.write("\nCapabilities:\n");
+        process.stdout.write(`  Platform: ${status.capabilities.platform}\n`);
+        process.stdout.write(
+          `  Path profile: ${status.capabilities.pathProfile}\n`,
+        );
+
+        const secretStoreState = status.capabilities.secretStore.available
+          ? "available"
+          : `unavailable${status.capabilities.secretStore.reason
+              ? ` (${status.capabilities.secretStore.reason})`
+              : ""}`;
+        process.stdout.write(
+          `  Secret store: ${status.capabilities.secretStore.label} — ${secretStoreState}\n`,
+        );
+
+        const browserState = status.capabilities.browserLauncher.available
+          ? "available"
+          : "not found";
+        process.stdout.write(
+          `  Browser launcher: ${status.capabilities.browserLauncher.label} — ${browserState}\n`,
+        );
+
         process.stdout.write("\n");
       } catch (error) {
         exitWithCommandError(error);

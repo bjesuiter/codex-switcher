@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import { writeAllAuthFiles } from "../auth";
 import { loadConfig, saveConfig } from "../config";
 import { handleSwitchAccount } from "../interactive";
-import { loadKeychainPayload } from "../keychain";
+import { getSecretStoreAdapter } from "../secrets/store";
 import { exitWithCommandError } from "./errors";
 import { writeSwitchSummary } from "./output";
 
@@ -15,7 +15,7 @@ export const switchNext = async (): Promise<void> => {
     throw new Error("Account entry missing accountId.");
   }
 
-  const payload = loadKeychainPayload(nextAccount.accountId);
+  const payload = getSecretStoreAdapter().load(nextAccount.accountId);
   const result = await writeAllAuthFiles(payload);
 
   config.current = nextIndex;
@@ -38,7 +38,7 @@ export const switchToAccount = async (identifier: string): Promise<void> => {
   }
 
   const account = config.accounts[index];
-  const payload = loadKeychainPayload(account.accountId);
+  const payload = getSecretStoreAdapter().load(account.accountId);
   const result = await writeAllAuthFiles(payload);
 
   config.current = index;

@@ -1,13 +1,8 @@
 import * as p from "@clack/prompts";
 import { writeAllAuthFiles } from "./auth";
 import { configExists, loadConfig, saveConfig } from "./config";
-import {
-  deleteKeychainPayload,
-  keychainPayloadExists,
-  listKeychainAccounts,
-  loadKeychainPayload,
-} from "./keychain";
 import { performLogin, performRefresh } from "./oauth/login";
+import { getSecretStoreAdapter } from "./secrets/store";
 import { writeActiveAuthFilesIfCurrent } from "./refresh";
 import { formatExpiry, getStatus } from "./status";
 import type { Config } from "./types";
@@ -23,13 +18,26 @@ const getAccountDisplay = (
   return isCurrent ? `${name} (current)` : name;
 };
 
+const hasStoredCredentials = (accountId: string): boolean =>
+  getSecretStoreAdapter().exists(accountId);
+
+const loadStoredCredentials = (accountId: string) =>
+  getSecretStoreAdapter().load(accountId);
+
+const getStoredAccountIds = (): string[] =>
+  getSecretStoreAdapter().listAccountIds();
+
+const removeStoredCredentials = (accountId: string): void => {
+  getSecretStoreAdapter().delete(accountId);
+};
+
 const getRefreshExpiryState = (accountId: string): string => {
-  if (!keychainPayloadExists(accountId)) {
+  if (!hasStoredCredentials(accountId)) {
     return "unknown [no keychain]";
   }
 
   try {
-    const payload = loadKeychainPayload(accountId);
+    const payload = loadStoredCredentials(accountId);
     return formatExpiry(payload.expires);
   } catch {
     return "unknown";
@@ -51,7 +59,7 @@ const handleListAccounts = async (): Promise<void> => {
     const displayName = account.label
       ? `${account.label} (${account.accountId})`
       : account.accountId;
-    const status = keychainPayloadExists(account.accountId)
+    const status = hasStoredCredentials(account.accountId)
       ? ""
       : " (missing credentials)";
     p.log.message(`${marker}${displayName}${status}`);
@@ -105,7 +113,7 @@ export const handleSwitchAccount = async (): Promise<void> => {
 
   let payload;
   try {
-    payload = loadKeychainPayload(selectedAccount.accountId);
+    payload = loadStoredCredentials(selectedAccount.accountId);
   } catch {
     p.log.error(
       `Missing credentials for account ${selectedAccount.label ?? selectedAccount.accountId}. Re-login with 'cdx login'.`,
@@ -250,7 +258,7 @@ const handleRemoveAccount = async (): Promise<void> => {
   }
 
   try {
-    deleteKeychainPayload(accountId);
+    removeStoredCredentials(accountId);
   } catch {
     // Keychain entry may not exist
   }
@@ -380,7 +388,7 @@ export const runInteractiveMode = async (): Promise<void> => {
   let running = true;
 
   while (running) {
-    const keychainAccounts = listKeychainAccounts();
+    const storedAccounts = getStoredAccountIds();
     let currentInfo = "";
 
     if (configExists()) {
@@ -404,7 +412,7 @@ export const runInteractiveMode = async (): Promise<void> => {
       options: [
         {
           value: "list",
-          label: `List accounts (${keychainAccounts.length} in Keychain)`,
+          label: `List accounts (${storedAccounts.length} in secure store)`,
         },
         { value: "switch", label: "Switch account" },
         { value: "add", label: "Add account (OAuth login)" },

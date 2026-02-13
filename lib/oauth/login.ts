@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
-import { spawn } from "node:child_process";
 import { configExists, loadConfig, saveConfig } from "../config";
-import { getKeychainService, saveKeychainPayload } from "../keychain";
+import { openBrowserUrl } from "../platform/browser";
+import { getSecretStoreAdapter } from "../secrets/store";
 import type { Config, OAuthPayload } from "../types";
 import {
   createAuthorizationFlow,
@@ -11,12 +11,12 @@ import {
 import { startOAuthServer } from "./server";
 
 const openBrowser = (url: string): void => {
-  const cmd = process.platform === "darwin" ? "open" : "xdg-open";
-  try {
-    spawn(cmd, [url], { detached: true, stdio: "ignore" }).unref();
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    p.log.warning(`Could not auto-open browser (${msg}).`);
+  const result = openBrowserUrl(url);
+  if (!result.ok) {
+    const msg = result.error ?? "unknown error";
+    p.log.warning(
+      `Could not auto-open browser via ${result.launcher.label} (${msg}).`,
+    );
   }
 };
 
@@ -25,6 +25,7 @@ const addAccountToConfig = async (
   label?: string,
 ): Promise<void> => {
   let config: Config;
+  const secretStore = getSecretStoreAdapter();
 
   if (configExists()) {
     config = await loadConfig();
@@ -32,7 +33,7 @@ const addAccountToConfig = async (
     if (!exists) {
       config.accounts.push({
         accountId,
-        keychainService: getKeychainService(accountId),
+        keychainService: secretStore.getServiceName(accountId),
         ...(label ? { label } : {}),
       });
     }
@@ -42,7 +43,7 @@ const addAccountToConfig = async (
       accounts: [
         {
           accountId,
-          keychainService: getKeychainService(accountId),
+          keychainService: secretStore.getServiceName(accountId),
           ...(label ? { label } : {}),
         },
       ],
@@ -159,14 +160,14 @@ export const performRefresh = async (
       ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
     };
 
-    saveKeychainPayload(newAccountId, payload);
+    getSecretStoreAdapter().save(newAccountId, payload);
 
     if (spinner) {
       spinner.stop("Credentials refreshed!");
     } else {
       p.log.success("Credentials refreshed!");
     }
-    p.log.success(`Account "${displayName}" credentials updated in Keychain.`);
+    p.log.success(`Account "${displayName}" credentials updated in secure store.`);
 
     return { accountId: newAccountId };
   } finally {
@@ -231,7 +232,7 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
     ...(tokenResult.idToken ? { idToken: tokenResult.idToken } : {}),
   };
 
-  saveKeychainPayload(accountId, payload);
+  getSecretStoreAdapter().save(accountId, payload);
 
   spinner.stop("Login successful!");
 
@@ -248,7 +249,7 @@ export const performLogin = async (): Promise<{ accountId: string } | null> => {
   await addAccountToConfig(accountId, label);
 
   const displayName = label ?? accountId;
-  p.log.success(`Account "${displayName}" saved to Keychain and config.`);
+  p.log.success(`Account "${displayName}" saved to secure store and config.`);
   p.outro("You can now use 'cdx switch' to activate this account.");
 
   return { accountId };
