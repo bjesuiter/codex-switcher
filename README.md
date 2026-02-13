@@ -169,7 +169,8 @@ Running `cdx` without arguments opens an interactive menu to:
 | `cdx switch <id>` | Switch to specific account |
 | `cdx label` | Label an account (interactive) |
 | `cdx label <account> <label>` | Assign label directly |
-| `cdx status` | Show account status, token expiry, usage, and auth file state |
+| `cdx status` | Show account status, token expiry, and usage |
+| `cdx doctor` | Show auth file paths/state and runtime capabilities |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx help [command]` | Show help for all commands or one command |

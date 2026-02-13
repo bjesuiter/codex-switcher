@@ -1,4 +1,5 @@
 export { registerDefaultInteractiveAction } from "./interactive";
+export { registerDoctorCommand } from "./doctor";
 export { registerHelpCommand } from "./help";
 export { registerLabelCommand } from "./label";
 export { type LoginDeps, registerLoginCommand } from "./login";
