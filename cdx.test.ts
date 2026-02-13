@@ -30,6 +30,15 @@ describe("cdx CLI", () => {
       expect(doctorCmd?.description()).toBe("Show auth file paths and runtime capabilities");
     });
 
+    it("has migrate-secrets command registered", () => {
+      const program = createProgram();
+      const migrateCmd = program.commands.find((cmd) => cmd.name() === "migrate-secrets");
+      expect(migrateCmd).toBeDefined();
+      expect(migrateCmd?.description()).toBe(
+        "Migrate macOS legacy keychain entries to cross-keychain and update config",
+      );
+    });
+
     it("has description set", () => {
       const program = createProgram();
       expect(program.description()).toBe(
@@ -49,6 +58,7 @@ describe("cdx CLI", () => {
       const output = result.stdout.toString();
       expect(output).toContain("Usage: cdx");
       expect(output).toContain("switch");
+      expect(output).toContain("migrate-secrets");
       expect(output).toContain("doctor");
       expect(output).toContain("--help");
       expect(output).toContain("--version");
