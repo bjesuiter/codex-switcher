@@ -1,5 +1,10 @@
 import os from "node:os";
 import path from "node:path";
+import {
+  resolveRuntimePaths,
+  type ResolvedPathProfile,
+  type ResolvedPathValues,
+} from "./platform/path-resolver";
 
 export type PathConfig = {
   configDir: string;
@@ -9,25 +14,45 @@ export type PathConfig = {
   piAuthPath: string;
 };
 
-const defaultConfigDir = path.join(os.homedir(), ".config", "cdx");
-
-const resolvePiAuthPath = (): string => {
-  const piAgentDir = process.env.PI_CODING_AGENT_DIR?.trim();
-  if (piAgentDir) return path.join(piAgentDir, "auth.json");
-  return path.join(os.homedir(), ".pi", "agent", "auth.json");
+export type PathResolutionInfo = {
+  platform: NodeJS.Platform;
+  profile: ResolvedPathProfile;
 };
 
-const createDefaultPaths = (): PathConfig => ({
-  configDir: defaultConfigDir,
-  configPath: path.join(defaultConfigDir, "accounts.json"),
-  authPath: path.join(os.homedir(), ".local", "share", "opencode", "auth.json"),
-  codexAuthPath: path.join(os.homedir(), ".codex", "auth.json"),
-  piAuthPath: resolvePiAuthPath(),
+const toPathConfig = (paths: ResolvedPathValues): PathConfig => ({
+  configDir: paths.configDir,
+  configPath: paths.configPath,
+  authPath: paths.authPath,
+  codexAuthPath: paths.codexAuthPath,
+  piAuthPath: paths.piAuthPath,
 });
 
-let currentPaths: PathConfig = createDefaultPaths();
+const createDefaultPaths = (): {
+  paths: PathConfig;
+  resolution: PathResolutionInfo;
+} => {
+  const resolved = resolveRuntimePaths({
+    platform: process.platform,
+    env: process.env,
+    homeDir: os.homedir(),
+  });
+
+  return {
+    paths: toPathConfig(resolved),
+    resolution: {
+      platform: process.platform,
+      profile: resolved.profile,
+    },
+  };
+};
+
+const initial = createDefaultPaths();
+let currentPaths: PathConfig = initial.paths;
+let currentResolution: PathResolutionInfo = initial.resolution;
 
 export const getPaths = (): PathConfig => currentPaths;
+
+export const getPathResolutionInfo = (): PathResolutionInfo => currentResolution;
 
 export const setPaths = (paths: Partial<PathConfig>): void => {
   currentPaths = { ...currentPaths, ...paths };
@@ -37,7 +62,9 @@ export const setPaths = (paths: Partial<PathConfig>): void => {
 };
 
 export const resetPaths = (): void => {
-  currentPaths = createDefaultPaths();
+  const next = createDefaultPaths();
+  currentPaths = next.paths;
+  currentResolution = next.resolution;
 };
 
 export const createTestPaths = (testDir: string): PathConfig => ({

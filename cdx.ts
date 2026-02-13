@@ -20,6 +20,13 @@ export type { AccountRecord, Config, OAuthPayload } from "./lib/types";
 export { loadConfig, saveConfig } from "./lib/config";
 export { writeAuthFile, writeCodexAuthFile, writePiAuthFile, writeAllAuthFiles } from "./lib/auth";
 export { getPaths, setPaths, resetPaths, createTestPaths } from "./lib/paths";
+export {
+  createRuntimeSecretStoreAdapter,
+  getSecretStoreAdapter,
+  resetSecretStoreAdapter,
+  setSecretStoreAdapter,
+  type SecretStoreAdapter,
+} from "./lib/secrets/store";
 export { runInteractiveMode } from "./lib/interactive";
 export { switchNext, switchToAccount } from "./lib/commands";
 

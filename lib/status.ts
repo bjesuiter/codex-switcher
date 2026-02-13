@@ -1,8 +1,12 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { configExists, loadConfig } from "./config";
-import { keychainPayloadExists, loadKeychainPayload } from "./keychain";
+import {
+  getRuntimeCapabilities,
+  type RuntimeCapabilities,
+} from "./platform/capabilities";
 import { getPaths } from "./paths";
+import { getSecretStoreAdapter } from "./secrets/store";
 import type { OAuthPayload } from "./types";
 
 export type AccountStatus = {
@@ -25,6 +29,7 @@ export type StatusInfo = {
   opencodeAuth: AuthFileStatus;
   codexAuth: AuthFileStatus;
   piAuth: AuthFileStatus;
+  capabilities: RuntimeCapabilities;
 };
 
 const formatDuration = (ms: number): string => {
@@ -103,14 +108,15 @@ const getAccountStatus = (
   isCurrent: boolean,
   label?: string,
 ): AccountStatus => {
-  const keychainExists = keychainPayloadExists(accountId);
+  const secretStore = getSecretStoreAdapter();
+  const keychainExists = secretStore.exists(accountId);
 
   let expiresAt: number | null = null;
   let hasIdToken = false;
 
   if (keychainExists) {
     try {
-      const payload: OAuthPayload = loadKeychainPayload(accountId);
+      const payload: OAuthPayload = secretStore.load(accountId);
       expiresAt = payload.expires;
       hasIdToken = !!payload.idToken;
     } catch {
@@ -147,5 +153,11 @@ export const getStatus = async (): Promise<StatusInfo> => {
     readPiAuthAccount(),
   ]);
 
-  return { accounts, opencodeAuth, codexAuth, piAuth };
+  return {
+    accounts,
+    opencodeAuth,
+    codexAuth,
+    piAuth,
+    capabilities: getRuntimeCapabilities(),
+  };
 };

@@ -1,5 +1,5 @@
-import { loadKeychainPayload, saveKeychainPayload } from "./keychain";
 import { refreshAccessToken } from "./oauth/auth";
+import { getSecretStoreAdapter } from "./secrets/store";
 import type { OAuthPayload } from "./types";
 
 export type WindowSnapshot = {
@@ -61,9 +61,11 @@ export const fetchUsageRaw = async (
 export const fetchUsage = async (
   accountId: string,
 ): Promise<UsageResult> => {
+  const secretStore = getSecretStoreAdapter();
+
   let payload: OAuthPayload;
   try {
-    payload = loadKeychainPayload(accountId);
+    payload = secretStore.load(accountId);
   } catch (err) {
     return {
       ok: false,
@@ -96,7 +98,7 @@ export const fetchUsage = async (
         expires: refreshResult.expires,
         idToken: refreshResult.idToken ?? payload.idToken,
       };
-      saveKeychainPayload(accountId, updatedPayload);
+      secretStore.save(accountId, updatedPayload);
 
       response = await fetchUsageRaw(updatedPayload.access, updatedPayload.accountId);
       if (!response.ok) {

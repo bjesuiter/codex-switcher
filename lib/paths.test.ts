@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import os from "node:os";
 import path from "node:path";
-import { getPaths, resetPaths } from "./paths";
+import { getPathResolutionInfo, getPaths, resetPaths } from "./paths";
 
 const originalPiAgentDir = process.env.PI_CODING_AGENT_DIR;
 
@@ -27,5 +27,11 @@ describe("paths", () => {
     resetPaths();
 
     expect(getPaths().piAuthPath).toBe("/tmp/pi-coding-agent/auth.json");
+  });
+
+  it("returns runtime path resolution metadata", () => {
+    const info = getPathResolutionInfo();
+    expect(info.platform).toBe(process.platform);
+    expect(["xdg", "windows-appdata"]).toContain(info.profile);
   });
 });

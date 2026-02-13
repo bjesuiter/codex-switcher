@@ -1,9 +1,9 @@
 import type { Command } from "commander";
 import { loadConfig } from "../config";
 import { handleReloginAccount } from "../interactive";
-import { keychainPayloadExists, loadKeychainPayload } from "../keychain";
 import { performRefresh } from "../oauth/login";
 import { writeActiveAuthFilesIfCurrent } from "../refresh";
+import { getSecretStoreAdapter } from "../secrets/store";
 import { formatExpiry } from "../status";
 import { exitWithCommandError } from "./errors";
 import { writeUpdatedAuthSummary } from "./output";
@@ -31,9 +31,10 @@ export const registerReloginCommand = (program: Command): void => {
           const displayName = target.label ?? target.accountId;
           let expiryState = "unknown";
           let keychainState = "";
-          if (keychainPayloadExists(target.accountId)) {
+          const secretStore = getSecretStoreAdapter();
+          if (secretStore.exists(target.accountId)) {
             try {
-              const payload = loadKeychainPayload(target.accountId);
+              const payload = secretStore.load(target.accountId);
               expiryState = formatExpiry(payload.expires);
             } catch {
               expiryState = "unknown";
