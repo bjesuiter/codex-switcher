@@ -1,4 +1,5 @@
 import path from "node:path";
+import * as p from "@clack/prompts";
 import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
@@ -85,10 +86,17 @@ export const registerDoctorCommand = (program: Command): void => {
             const services = accountsWithSecrets.map((account) =>
               secretStore.getServiceName(account.accountId)
             );
-            const decryptAccessByService = getKeychainDecryptAccessByService(services);
 
             process.stdout.write("\nKeychain ACL checks:\n");
             process.stdout.write(`  Runtime executable: ${runtimeExecutablePath}\n`);
+
+            const aclSpinner = p.spinner();
+            const accountWord = accountsWithSecrets.length === 1 ? "account" : "accounts";
+            aclSpinner.start(
+              `Checking keychain ACLs for ${accountsWithSecrets.length} ${accountWord}...`,
+            );
+            const decryptAccessByService = getKeychainDecryptAccessByService(services);
+            aclSpinner.stop("Keychain ACL checks complete.");
 
             for (const account of accountsWithSecrets) {
               const service = secretStore.getServiceName(account.accountId);
