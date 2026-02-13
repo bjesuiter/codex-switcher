@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Add a runtime warning when macOS secret-store selection resolves to legacy/CLI keychain modes where Touch ID prompts may not be offered.
+- Increase cross-keychain max password length handling (default `16384`) to support larger stored credential payloads.
+
+### Internal
+
+- Temporarily switch keyring dependency from `cross-keychain` to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is available.
+- Remove Windows credential payload chunking and store payloads directly in the selected backend.
+
 ## 1.4.0
 
 ### Features

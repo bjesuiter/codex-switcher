@@ -6,6 +6,18 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
+### Unreleased
+
+#### Features
+
+- Add a warning when macOS keychain runs on legacy/CLI fallback modes where Touch ID prompts may not be offered.
+- Raise cross-keychain max password length handling (default `16384`) to better support larger credential payloads.
+
+#### Internal
+
+- Temporarily switch secure-store dependency to `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream updates are available.
+- Remove Windows credential chunking logic now that larger password lengths are supported directly.
+
 ### 1.4.0
 
 #### Features
@@ -212,6 +224,10 @@ source <(cdx complete bash)
 - `--secret-store <mode>` always overrides config for the current run.
 - If only a fallback secure-store backend is available on your platform, `cdx` asks for one-time explicit consent before the first credential write and explains the security trade-off.
   - Non-interactive override (if you accept the risk): set `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
+- Cross-keychain payload size policy:
+  - Default max password length override is `16384`.
+  - Optional override: set `CDX_CROSS_KEYCHAIN_MAX_PASSWORD_LENGTH=<integer-above-4096>`.
+  - This currently relies on `@bjesuiter/cross-keychain@1.1.0-jb.0` until upstream support is released.
 
 ### Account list path
 
