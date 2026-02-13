@@ -44,6 +44,12 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 - macOS (uses Keychain), Windows (uses Windows Credential Manager), **or** Linux (uses Secret Service/keyring)
 - [Bun](https://bun.sh) runtime
 
+## Platform Support Status
+
+- **macOS:** stable
+- **Windows:** beta
+- **Linux:** beta
+
 ## Install
 
 ```bash
@@ -51,6 +57,45 @@ bun add -g @bjesuiter/codex-switch
 ```
 
 This exposes the `cdx` binary globally.
+
+## Windows/Linux Testing Status (Beta)
+
+Windows and Linux support are **test-ready** and suitable for friend/beta testing, but are not yet production-proven by broad real-world testing.
+
+### Suggested Windows tester checklist
+
+1. Install [Bun](https://bun.sh)
+2. Install `cdx`
+3. Run and verify:
+   - `cdx login`
+   - `cdx status`
+   - `cdx switch`
+   - `cdx relogin <account-id-or-label>`
+4. Confirm auth files are written correctly after switching:
+   - `%LOCALAPPDATA%\\opencode\\auth.json`
+   - `%USERPROFILE%\\.codex\\auth.json`
+   - `%USERPROFILE%\\.pi\\agent\\auth.json` (or `%PI_CODING_AGENT_DIR%\\auth.json`)
+5. If prompted about secure-store fallback, explicitly choose whether to allow it for testing.
+   - Non-interactive override (if you accept the risk): `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
+
+### Suggested Linux tester checklist
+
+1. Install [Bun](https://bun.sh)
+2. Ensure a Secret Service backend is available (for example GNOME Keyring with `secret-tool`)
+3. Install `cdx`
+4. Run and verify:
+   - `cdx login`
+   - `cdx status`
+   - `cdx switch`
+   - `cdx relogin <account-id-or-label>`
+5. Confirm auth files are written correctly after switching:
+   - `~/.local/share/opencode/auth.json` (or `$XDG_DATA_HOME/opencode/auth.json`)
+   - `~/.codex/auth.json`
+   - `~/.pi/agent/auth.json` (or `$PI_CODING_AGENT_DIR/auth.json`)
+6. If prompted about secure-store fallback, explicitly choose whether to allow it for testing.
+   - Non-interactive override (if you accept the risk): `CDX_ALLOW_SECURE_STORE_FALLBACK=1`
+
+Please report the full command output and platform info (`cdx status`) for any failures.
 
 ## Usage
 
@@ -60,7 +105,7 @@ This exposes the `cdx` binary globally.
 cdx login
 ```
 
-Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in the OS secure store (macOS Keychain or Windows Credential Manager).
+Opens your browser to authenticate with OpenAI. After successful login, your credentials are stored securely in the OS secure store (macOS Keychain, Windows Credential Manager, or Linux Secret Service).
 
 ### Switch between accounts
 
