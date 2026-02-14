@@ -4,7 +4,10 @@ import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
 import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
-import { getSecretStoreAdapter } from "../secrets/store";
+import {
+  getSecretStoreAdapter,
+  isMissingSecretStoreEntryError,
+} from "../secrets/store";
 import { exitWithCommandError } from "./errors";
 
 const hasRuntimeTrustedApp = (
@@ -80,6 +83,42 @@ export const registerDoctorCommand = (program: Command): void => {
         process.stdout.write(
           `  Browser launcher: ${status.capabilities.browserLauncher.label} — ${browserState}\n`,
         );
+
+        if (process.platform === "win32") {
+          const secretStore = getSecretStoreAdapter();
+          process.stdout.write("\nWindows secure-store checks:\n");
+
+          if (status.accounts.length === 0) {
+            process.stdout.write("  No accounts configured in config.\n");
+          } else {
+            let okCount = 0;
+
+            for (const account of status.accounts) {
+              const accountLabel = resolveLabel(account.accountId);
+              try {
+                await secretStore.load(account.accountId);
+                okCount += 1;
+                process.stdout.write(`  ${accountLabel}: credential payload load OK\n`);
+              } catch (error) {
+                if (isMissingSecretStoreEntryError(error)) {
+                  process.stdout.write(
+                    `  ⚠ ${accountLabel}: missing secure-store entry for configured account\n`,
+                  );
+                  continue;
+                }
+
+                const message = error instanceof Error ? error.message : String(error);
+                process.stdout.write(
+                  `  ⚠ ${accountLabel}: secure-store load failed (${message})\n`,
+                );
+              }
+            }
+
+            process.stdout.write(
+              `  Summary: ${okCount}/${status.accounts.length} configured account(s) passed secure-store load checks.\n`,
+            );
+          }
+        }
 
         if (process.platform === "darwin" && !options.checkKeychainAcl) {
           process.stdout.write("  ┌─ Optional keychain ACL check\n");
