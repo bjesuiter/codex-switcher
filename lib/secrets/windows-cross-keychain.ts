@@ -179,7 +179,7 @@ const parseVault = (raw: string, source: string): WindowsEncryptedVault => {
 };
 
 const decryptVault = async (
-  ciphertext: string,
+  ciphertext: Uint8Array,
   passphrase: string,
   source: string,
 ): Promise<WindowsEncryptedVault> => {
@@ -202,7 +202,7 @@ const decryptVault = async (
 const encryptVault = async (
   vault: WindowsEncryptedVault,
   passphrase: string,
-): Promise<string> => {
+): Promise<Uint8Array> => {
   const encrypter = new Encrypter();
   encrypter.setPassphrase(passphrase);
   return encrypter.encrypt(JSON.stringify(vault));
@@ -211,9 +211,9 @@ const encryptVault = async (
 const loadVault = async (passphrase: string): Promise<WindowsEncryptedVault> => {
   const vaultPath = getWindowsVaultPath();
 
-  let ciphertext: string;
+  let ciphertext: Uint8Array;
   try {
-    ciphertext = await readFile(vaultPath, "utf8");
+    ciphertext = await readFile(vaultPath);
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
       return createEmptyVault();
@@ -221,7 +221,7 @@ const loadVault = async (passphrase: string): Promise<WindowsEncryptedVault> => 
     throw error;
   }
 
-  if (!ciphertext.trim()) {
+  if (ciphertext.length === 0) {
     return createEmptyVault();
   }
 
@@ -236,7 +236,7 @@ const saveVault = async (
   const vaultPath = getWindowsVaultPath();
   await mkdir(configDir, { recursive: true });
   const ciphertext = await encryptVault(vault, passphrase);
-  await writeFile(vaultPath, ciphertext, "utf8");
+  await writeFile(vaultPath, ciphertext);
 };
 
 const loadLegacyPayload = async (accountId: string): Promise<OAuthPayload | null> => {
