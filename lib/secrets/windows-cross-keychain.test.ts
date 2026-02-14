@@ -1,4 +1,8 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdirSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createTestPaths, resetPaths, setPaths } from "../paths";
 import type { OAuthPayload } from "../types";
 import {
   deleteWindowsCrossKeychainPayload,
@@ -36,6 +40,16 @@ const makePayload = (accountId: string): OAuthPayload => ({
 
 describe("windows cross-keychain integration", () => {
   const createdAccountIds: string[] = [];
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = path.join(
+      os.tmpdir(),
+      `cdx-windows-cross-keychain-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(testDir, { recursive: true });
+    setPaths(createTestPaths(testDir));
+  });
 
   afterEach(async () => {
     for (const accountId of createdAccountIds.splice(0)) {
@@ -44,6 +58,13 @@ describe("windows cross-keychain integration", () => {
       } catch {
         // Best effort cleanup in tests.
       }
+    }
+
+    resetPaths();
+    try {
+      rmSync(testDir, { recursive: true, force: true });
+    } catch {
+      // Best effort temp-dir cleanup in tests.
     }
   });
 
