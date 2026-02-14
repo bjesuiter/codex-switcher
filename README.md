@@ -6,12 +6,16 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.5.1
+### 1.6.0
+
+#### Features
+
+- Add Windows-only secure-store validation in `cdx doctor` for all configured accounts, including per-account load results and a pass/fail summary.
 
 #### Fixes
 
-- `cdx doctor --check-keychain-acl` now suggests running `cdx migrate-secrets` when keychain ACL/runtime mismatches are detected.
-- Clarify keychain ACL diagnostics wording to distinguish entries created by `cdx` (Bun runtime) vs the legacy Apple `security` CLI path, including why mismatches can trigger repeated keychain password prompts.
+- Fix Windows credential persistence for large OAuth payloads by moving account payload storage to an Age-encrypted vault file (`accounts.windows.age`) and storing only the vault passphrase in Windows Credential Manager.
+- Keep backward compatibility on Windows by reading legacy per-account secure-store entries and cleaning them up on save/delete.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 

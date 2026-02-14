@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.6.0
+
+### Features
+
+- Add Windows-only secure-store validation in `cdx doctor` for all configured accounts, including per-account load results and a pass/fail summary.
+
+### Fixes
+
+- Fix Windows credential persistence for large OAuth payloads by moving account payload storage to an Age-encrypted vault file (`accounts.windows.age`) and storing only the vault passphrase in Windows Credential Manager.
+- Keep backward compatibility on Windows by reading legacy per-account secure-store entries and cleaning them up on save/delete.
+
 ## 1.5.1
 
 ### Fixes
