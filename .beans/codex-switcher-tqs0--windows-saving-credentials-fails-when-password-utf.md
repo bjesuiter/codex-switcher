@@ -1,11 +1,11 @@
 ---
 # codex-switcher-tqs0
 title: 'Windows: saving credentials fails when password UTF-16 length exceeds platform limit'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-02-13T23:29:53Z
-updated_at: 2026-02-13T23:38:41Z
+updated_at: 2026-02-13T23:45:18Z
 parent: codex-switcher-i5g5
 ---
 
@@ -40,3 +40,24 @@ Credential persistence fails due to a platform length limit in the Windows crede
 1. Store payload in multiple credential entries on Windows (chunked or field-split) and reassemble on load.
 2. Store `idToken` separately from `refresh`/`access` payload to reduce main secret size.
 3. Add explicit preflight size check + actionable error message when payload exceeds Windows limits.
+
+## Implementation decision (user request)
+
+Use Windows hybrid storage instead of splitting credentials:
+
+- Persist account credentials in an encrypted file next to config (`configDir`) keyed by `accountId -> full OAuth payload`.
+- Encrypt/decrypt that file with passphrase mode via `age-encryption`.
+- Store the encryption passphrase in Windows Credential Manager (cross-keychain backend).
+- Keep one full payload per account in the encrypted file; do not chunk/split token fields across multiple credential entries.
+
+## Summary of Changes
+
+Implemented Windows hybrid credential storage to avoid Credential Manager size limits:
+
+- Added `age-encryption` dependency and integrated passphrase encryption (`Encrypter`/`Decrypter`).
+- Reworked `lib/secrets/windows-cross-keychain.ts` to store OAuth payloads in an encrypted file next to config: `configDir/accounts.windows.age`.
+- File contents are an account map (`accountId -> full OAuth payload`) encrypted with Age passphrase mode.
+- Added passphrase key management in Windows Credential Manager using cross-keychain (`cdx-openai-vault-passphrase` / `windows-v1`).
+- Kept Windows backend initialization/fallback-consent flow intact.
+- Added backward compatibility reads from legacy per-account Credential Manager entries and best-effort cleanup of legacy entries on save/delete.
+- Verified project tests pass (`bun test`).

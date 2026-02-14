@@ -35,6 +35,7 @@
     "@bomb.sh/tab": "^0.0.13",
     "@clack/prompts": "^1.0.0",
     "@openauthjs/openauth": "^0.4.3",
+    "age-encryption": "^0.3.0",
     "commander": "^14.0.3"
   }
 }
