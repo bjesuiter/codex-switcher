@@ -1,11 +1,11 @@
 ---
 # codex-switcher-cip1
 title: linux compat
-status: todo
+status: completed
 type: epic
 priority: normal
 created_at: 2026-02-13T12:59:25Z
-updated_at: 2026-02-13T13:12:55Z
+updated_at: 2026-02-25T20:59:49Z
 parent: codex-switcher-y9qh
 blocked_by:
     - codex-switcher-8j5t
@@ -18,3 +18,10 @@ Deliver Linux compatibility using shared abstractions: secure credential backend
 
 - In scope (now): Linux desktop setups with available keyring/Secret Service support.
 - Out of scope (now): WSL and headless Linux environments until fnox-backed secret adapter support is added.
+
+## Summary of Changes
+
+- Implemented Linux secure-store support via cross-keychain integration in lib/secrets/linux-cross-keychain.ts.
+- Added Linux path/profile handling (XDG defaults + env overrides) in lib/platform/path-resolver.ts.
+- Added Linux browser-launch support and validation tests, plus follow-up reliability fixes for Linux secure-store behavior.
+- Scoped headless/WSL follow-up remains tracked separately as deferred work (fnox adapter bean).
