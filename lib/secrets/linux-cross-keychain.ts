@@ -14,8 +14,62 @@ const LINUX_FALLBACK_SCOPE = "linux:cross-keychain:secret-service";
 
 type BackendId = "native-linux" | "secret-service";
 
+export type LinuxSecureStoreErrorKind =
+  | "missing_entry"
+  | "store_unavailable"
+  | "other";
+
+const MISSING_ENTRY_MARKERS = [
+  "no matching entry found in secure storage",
+  "password not found",
+  "no stored credentials found",
+  "credential not found",
+];
+
+const STORE_UNAVAILABLE_MARKERS = [
+  "unable to initialize linux secure-store backend",
+  "no keyring backend could be initialized",
+  "native keyring module not available",
+  "secret service operation failed",
+  "dbus",
+  "d-bus",
+  "org.freedesktop.secrets",
+  "service unavailable",
+];
+
 let backendInitPromise: Promise<void> | null = null;
 let selectedBackend: BackendId | null = null;
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+export const classifyLinuxSecureStoreError = (
+  error: unknown,
+): LinuxSecureStoreErrorKind => {
+  const message = getErrorMessage(error).toLowerCase();
+
+  if (MISSING_ENTRY_MARKERS.some((marker) => message.includes(marker))) {
+    return "missing_entry";
+  }
+
+  if (STORE_UNAVAILABLE_MARKERS.some((marker) => message.includes(marker))) {
+    return "store_unavailable";
+  }
+
+  return "other";
+};
+
+const createLinuxSecureStoreUnavailableError = (details?: string): Error => {
+  const guidance =
+    "Linux secure store is unavailable. Ensure Secret Service is installed/running " +
+    "(for example gnome-keyring with secret-tool), then retry login.";
+
+  if (!details) {
+    return new Error(guidance);
+  }
+
+  return new Error(`${guidance} Technical details: ${details}`);
+};
 
 const tryUseBackend = async (backendId: BackendId): Promise<boolean> => {
   try {
@@ -47,6 +101,33 @@ const selectBackend = async (): Promise<BackendId> => {
   }
 
   throw new Error("Unable to initialize Linux secure-store backend via cross-keychain.");
+};
+
+const setActiveBackend = (backendId: BackendId): void => {
+  selectedBackend = backendId;
+  backendInitPromise = Promise.resolve();
+};
+
+const trySwitchBackend = async (
+  backendId: BackendId,
+  options: { forWrite?: boolean } = {},
+): Promise<boolean> => {
+  if (options.forWrite && backendId === "secret-service") {
+    await ensureFallbackConsent(
+      LINUX_FALLBACK_SCOPE,
+      "⚠ Security warning: only the cross-keychain Linux fallback backend is available.\n" +
+        "This path relies on shell-based `secret-tool` operations for Secret Service access.\n" +
+        "Compared to native bindings, secrets may be more exposed to process inspection/logging while helper commands run.",
+    );
+  }
+
+  try {
+    await useBackend(backendId, getCrossKeychainBackendOverrides());
+    setActiveBackend(backendId);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const ensureLinuxBackend = async (
@@ -99,38 +180,125 @@ const withService = async <T>(
   run: (service: string) => Promise<T>,
   options: { forWrite?: boolean } = {},
 ): Promise<T> => {
-  await ensureLinuxBackend(options);
-  return run(getLinuxCrossKeychainService(accountId));
+  try {
+    await ensureLinuxBackend(options);
+  } catch (error) {
+    throw createLinuxSecureStoreUnavailableError(getErrorMessage(error));
+  }
+
+  try {
+    return await run(getLinuxCrossKeychainService(accountId));
+  } catch (error) {
+    if (classifyLinuxSecureStoreError(error) === "store_unavailable") {
+      throw createLinuxSecureStoreUnavailableError(getErrorMessage(error));
+    }
+    throw error;
+  }
+};
+
+const trySaveWithSecretServiceFallback = async (
+  accountId: string,
+  serializedPayload: string,
+): Promise<{ ok: true } | { ok: false; error: unknown }> => {
+  const switched = await trySwitchBackend("secret-service", { forWrite: true });
+  if (!switched) {
+    return {
+      ok: false,
+      error: new Error("Unable to switch Linux secure-store backend to secret-service fallback."),
+    };
+  }
+
+  try {
+    const service = getLinuxCrossKeychainService(accountId);
+    await setPassword(service, accountId, serializedPayload);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error };
+  }
 };
 
 export const saveLinuxCrossKeychainPayload = async (
   accountId: string,
   payload: OAuthPayload,
-): Promise<void> => withService(
-  accountId,
-  (service) => setPassword(service, accountId, JSON.stringify(payload)),
-  { forWrite: true },
-);
+): Promise<void> => {
+  const serialized = JSON.stringify(payload);
+
+  try {
+    await withService(
+      accountId,
+      (service) => setPassword(service, accountId, serialized),
+      { forWrite: true },
+    );
+    return;
+  } catch (error) {
+    const kind = classifyLinuxSecureStoreError(error);
+
+    if (kind === "missing_entry" && selectedBackend === "native-linux") {
+      const fallbackResult = await trySaveWithSecretServiceFallback(accountId, serialized);
+      if (fallbackResult.ok) {
+        return;
+      }
+
+      const originalDetails = getErrorMessage(error);
+      const fallbackDetails = getErrorMessage(fallbackResult.error);
+      throw createLinuxSecureStoreUnavailableError(
+        `Native backend could not create the credential entry (${originalDetails}). ` +
+          `Fallback secret-service backend also failed (${fallbackDetails}).`,
+      );
+    }
+
+    if (kind === "store_unavailable") {
+      throw createLinuxSecureStoreUnavailableError(getErrorMessage(error));
+    }
+
+    throw error;
+  }
+};
 
 export const loadLinuxCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
-  const raw = await withService(accountId, (service) => getPassword(service, accountId));
+  try {
+    const raw = await withService(accountId, (service) => getPassword(service, accountId));
 
-  if (raw === null) {
-    throw new Error(`No stored credentials found for account ${accountId}.`);
+    if (raw === null) {
+      throw new Error(`No stored credentials found for account ${accountId}.`);
+    }
+
+    return parsePayload(accountId, raw);
+  } catch (error) {
+    if (classifyLinuxSecureStoreError(error) === "missing_entry") {
+      throw new Error(`No stored credentials found for account ${accountId}.`);
+    }
+    throw error;
   }
-
-  return parsePayload(accountId, raw);
 };
 
 export const deleteLinuxCrossKeychainPayload = async (
   accountId: string,
-): Promise<void> => withService(accountId, (service) => deletePassword(service, accountId));
+): Promise<void> => {
+  try {
+    await withService(accountId, (service) => deletePassword(service, accountId));
+  } catch (error) {
+    if (classifyLinuxSecureStoreError(error) === "missing_entry") {
+      return;
+    }
+    throw error;
+  }
+};
 
 export const linuxCrossKeychainPayloadExists = async (
   accountId: string,
-): Promise<boolean> => withService(
-  accountId,
-  async (service) => (await getPassword(service, accountId)) !== null,
-);
+): Promise<boolean> => {
+  try {
+    return await withService(
+      accountId,
+      async (service) => (await getPassword(service, accountId)) !== null,
+    );
+  } catch (error) {
+    if (classifyLinuxSecureStoreError(error) === "missing_entry") {
+      return false;
+    }
+    throw error;
+  }
+};

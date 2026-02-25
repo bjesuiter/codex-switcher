@@ -6,6 +6,7 @@
 
 - Make manual URL copy/paste callback flow the recommended browser-launch fallback option in interactive login prompts.
 - Add explicit guidance that `--device-flow` may fail on some VPS/server IPs due to Cloudflare challenge blocking, and recommend retrying with the default login flow.
+- Linux secure-store: normalize native Secret Service "no matching entry" errors as missing-entry cases, retry writes via Secret Service fallback when native writes fail on first save, and emit clearer actionable errors when the secure store backend is unavailable.
 
 ## 1.7.4
 

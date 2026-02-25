@@ -4,6 +4,7 @@ import {
   createRuntimeSecretStoreAdapter,
   createSecretStoreAdapterFromSelection,
   getSecretStoreAdapter,
+  isMissingSecretStoreEntryError,
   resetSecretStoreAdapter,
   setSecretStoreAdapter,
   type SecretStoreAdapter,
@@ -44,6 +45,15 @@ describe("createSecretStoreAdapterFromSelection", () => {
     expect(() =>
       createSecretStoreAdapterFromSelection("legacy-keychain", "linux"),
     ).toThrow(/only available on macOS/);
+  });
+});
+
+describe("isMissingSecretStoreEntryError", () => {
+  it("detects native Linux missing-entry error markers", () => {
+    const error = new Error(
+      "Native secret service error: no matching entry found in secure storage",
+    );
+    expect(isMissingSecretStoreEntryError(error)).toBe(true);
   });
 });
 

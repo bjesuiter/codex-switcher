@@ -56,6 +56,7 @@ const MISSING_SECRET_STORE_ERROR_MARKERS = [
   "No stored credentials found",
   "No Keychain payload found",
   "Password not found",
+  "no matching entry found in secure storage",
 ];
 
 export const isMissingSecretStoreEntryError = (error: unknown): boolean => {
