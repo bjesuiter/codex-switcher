@@ -156,8 +156,8 @@ const checkGnomeKeyringRunning = async (): Promise<{
 }> => {
   if (await isCommandAvailable("pgrep")) {
     const pgrepResult = await runCommandCapture("pgrep", [
-      "-x",
-      "gnome-keyring-daemon",
+      "-f",
+      "(^|/)gnome-keyring-daemon( |$)",
     ]);
 
     if (pgrepResult.ok) {
