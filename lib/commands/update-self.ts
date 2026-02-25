@@ -57,6 +57,57 @@ const executeUpdate = async (
   });
 };
 
+const executeCapture = async (
+  command: string,
+  args: string[],
+): Promise<{ ok: boolean; output: string }> =>
+  await new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+
+    child.once("error", () => {
+      resolve({ ok: false, output: "" });
+    });
+
+    child.once("close", (code) => {
+      resolve({ ok: code === 0, output: stdout.trim() });
+    });
+  });
+
+const getInstalledCdxVersion = async (): Promise<string | null> => {
+  const attempts: Array<{ command: string; args: string[] }> = [
+    { command: "cdx", args: ["--version"] },
+  ];
+
+  if (process.argv[0] && process.argv[1]) {
+    attempts.push({
+      command: process.argv[0],
+      args: [process.argv[1], "--version"],
+    });
+  }
+
+  for (const attempt of attempts) {
+    const result = await executeCapture(attempt.command, attempt.args);
+    if (!result.ok || !result.output) {
+      continue;
+    }
+
+    const version = result.output.split(/\r?\n/).at(-1)?.trim();
+    if (version) {
+      return version;
+    }
+  }
+
+  return null;
+};
+
 export const registerUpdateSelfCommand = (program: Command): void => {
   program
     .command("update-self")
@@ -157,9 +208,10 @@ export const registerUpdateSelfCommand = (program: Command): void => {
         }
 
         await executeUpdate(command.command, command.args);
+        const installedVersion = await getInstalledCdxVersion();
         process.stdout.write("Update completed.\n");
         process.stdout.write(
-          "Run `cdx version` to verify the installed version.\n",
+          `Installed version: ${installedVersion ?? "unknown"}\n`,
         );
       } catch (error) {
         exitWithCommandError(error);
