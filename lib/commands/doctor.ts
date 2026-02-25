@@ -4,7 +4,9 @@ import type { Command } from "commander";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
 import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
+import { runSecretStoreWriteReadProbe } from "../secrets/probe";
 import {
+  createRuntimeSecretStoreAdapter,
   getSecretStoreAdapter,
   isMissingSecretStoreEntryError,
 } from "../secrets/store";
@@ -116,6 +118,23 @@ export const registerDoctorCommand = (program: Command): void => {
 
             process.stdout.write(
               `  Summary: ${okCount}/${status.accounts.length} configured account(s) passed secure-store load checks.\n`,
+            );
+          }
+        }
+
+        if (process.platform === "linux") {
+          process.stdout.write("\nLinux secure-store probe:\n");
+          const probeAdapter = createRuntimeSecretStoreAdapter("linux");
+          const probeResult = await runSecretStoreWriteReadProbe(probeAdapter);
+
+          if (probeResult.ok) {
+            process.stdout.write("  write/read/delete probe: OK\n");
+          } else {
+            process.stdout.write(
+              `  ⚠ ${probeResult.stage} failed: ${probeResult.error.message}\n`,
+            );
+            process.stdout.write(
+              "  Suggested fix: ensure Secret Service is running/unlocked (for example gnome-keyring + secret-tool), then retry login.\n",
             );
           }
         }

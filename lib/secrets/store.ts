@@ -53,10 +53,11 @@ export type SecretStoreAdapter = {
 };
 
 const MISSING_SECRET_STORE_ERROR_MARKERS = [
-  "No stored credentials found",
-  "No Keychain payload found",
-  "Password not found",
+  "no stored credentials found",
+  "no keychain payload found",
+  "password not found",
   "no matching entry found in secure storage",
+  "no result found",
 ];
 
 export const isMissingSecretStoreEntryError = (error: unknown): boolean => {
@@ -64,8 +65,10 @@ export const isMissingSecretStoreEntryError = (error: unknown): boolean => {
     return false;
   }
 
+  const message = error.message.toLowerCase();
+
   return MISSING_SECRET_STORE_ERROR_MARKERS.some((marker) =>
-    error.message.includes(marker)
+    message.includes(marker)
   );
 };
 

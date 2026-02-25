@@ -24,6 +24,7 @@ const MISSING_ENTRY_MARKERS = [
   "password not found",
   "no stored credentials found",
   "credential not found",
+  "no result found",
 ];
 
 const STORE_UNAVAILABLE_MARKERS = [
@@ -31,6 +32,7 @@ const STORE_UNAVAILABLE_MARKERS = [
   "no keyring backend could be initialized",
   "native keyring module not available",
   "secret service operation failed",
+  "couldn't access platform secure storage",
   "dbus",
   "d-bus",
   "org.freedesktop.secrets",

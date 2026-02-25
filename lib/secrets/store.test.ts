@@ -55,6 +55,13 @@ describe("isMissingSecretStoreEntryError", () => {
     );
     expect(isMissingSecretStoreEntryError(error)).toBe(true);
   });
+
+  it("detects secret-service 'no result found' missing-entry errors", () => {
+    const error = new Error(
+      "Native secret service errror: Couldn't access platform secure storage: Secret Service: no result found",
+    );
+    expect(isMissingSecretStoreEntryError(error)).toBe(true);
+  });
 });
 
 describe("cached runtime adapter", () => {

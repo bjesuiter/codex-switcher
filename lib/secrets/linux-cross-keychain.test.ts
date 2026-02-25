@@ -10,6 +10,14 @@ describe("classifyLinuxSecureStoreError", () => {
     expect(classifyLinuxSecureStoreError(error)).toBe("missing_entry");
   });
 
+  it("classifies missing-entry secret-service 'no result found' errors", () => {
+    const error = new Error(
+      "Native secret service errror: Couldn't access platform secure storage: Secret Service: no result found",
+    );
+
+    expect(classifyLinuxSecureStoreError(error)).toBe("missing_entry");
+  });
+
   it("classifies store-unavailable initialization errors", () => {
     const error = new Error(
       "Unable to initialize Linux secure-store backend via cross-keychain.",
@@ -21,6 +29,14 @@ describe("classifyLinuxSecureStoreError", () => {
   it("classifies store-unavailable DBus errors", () => {
     const error = new Error(
       "Native secret service error: org.freedesktop.secrets service unavailable on D-Bus",
+    );
+
+    expect(classifyLinuxSecureStoreError(error)).toBe("store_unavailable");
+  });
+
+  it("classifies generic secure-storage access failures as store-unavailable", () => {
+    const error = new Error(
+      "Couldn't access platform secure storage: Secret Service: session is closed",
     );
 
     expect(classifyLinuxSecureStoreError(error)).toBe("store_unavailable");
