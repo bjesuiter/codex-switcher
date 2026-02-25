@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.7.1
+
+### Features
+
+- Add a release helper script (`scripts/wait-for-npm-latest.ts`) plus `bun run wait-npm-latest` to poll npm until the package `latest` tag matches the target version.
+
+### Fixes
+
+- Fix Windows CI completion test behavior by providing `APPDATA` in the account-completion test environment, so account suggestions are resolved correctly on `windows-latest`.
+
 ## 1.7.0
 
 ### Features

@@ -6,24 +6,15 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.7.0
+### 1.7.1
 
 #### Features
 
-- Add autocomplete integration powered by `@bomb.sh/tab` Commander support, including:
-  - completion of `--secret-store` values (`auto`, `legacy-keychain`)
-  - account ID/label completion for `switch`, `relogin`, `usage`, and `label`
-  - command-name completion for `help <command>`
-- Add explicit device OAuth flow flags for authentication commands:
-  - `cdx login --device-flow`
-  - `cdx relogin --device-flow`
-  - `cdx relogin <account> --device-flow`
-- Add interactive fallback when browser auto-open is unavailable, allowing users to choose between manual URL copy/paste completion and device OAuth flow.
+- Add a release helper script (`scripts/wait-for-npm-latest.ts`) plus `bun run wait-npm-latest` to poll npm until the package `latest` tag matches the target version.
 
 #### Fixes
 
-- Prevent login/relogin crashes when the platform browser launcher (for example `xdg-open`) is missing or fails to start.
-- Improve non-interactive/headless auth behavior by automatically choosing a safe fallback path (manual on local terminals, device flow on likely remote Linux/SSH sessions).
+- Fix Windows CI completion test behavior by providing `APPDATA` in the account-completion test environment, so account suggestions are resolved correctly on `windows-latest`.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
