@@ -13,7 +13,7 @@
 ## Releasing a new version
 
 1. Increase version in `package.json`
-2. Add changelog entry for the version in `CHANGELOG.md`
+2. Add changelog entries for the version in `CHANGELOG.md`, based on the changes of current git HEAD compared to the latest release tag.
 3. Copy the new release notes into the `README.md` "Latest Changes" section and delete the changes of the previous version
 4. Commit the changes
 5. Create a git tag with the version number (no prefix): `git tag X.Y.Z`
