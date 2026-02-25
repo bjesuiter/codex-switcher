@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+## 1.7.0
+
 ### Features
 
+- Add autocomplete integration powered by `@bomb.sh/tab` Commander support, including:
+  - completion of `--secret-store` values (`auto`, `legacy-keychain`)
+  - account ID/label completion for `switch`, `relogin`, `usage`, and `label`
+  - command-name completion for `help <command>`
 - Add explicit device OAuth flow flags for authentication commands:
   - `cdx login --device-flow`
   - `cdx relogin --device-flow`

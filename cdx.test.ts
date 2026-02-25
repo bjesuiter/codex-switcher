@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "bun:test";
 import pkg from "./package.json";
 import { createProgram, getMacOSKeychainPromptWarning } from "./cdx";
@@ -154,6 +157,52 @@ describe("cdx CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(output).toContain("switch");
       expect(output).toContain("status");
+    });
+
+    it("completes --secret-store values", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "complete", "--", "--secret-store="],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("auto");
+      expect(output).toContain("legacy-keychain");
+    });
+
+    it("completes account arguments from accounts.json", async () => {
+      const tempConfigHome = mkdtempSync(path.join(os.tmpdir(), "cdx-complete-"));
+      const configDir = path.join(tempConfigHome, "cdx");
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        path.join(configDir, "accounts.json"),
+        JSON.stringify({
+          current: 0,
+          accounts: [
+            { accountId: "acc-work", keychainService: "cdx-openai-acc-work", label: "Work" },
+            { accountId: "acc-personal", keychainService: "cdx-openai-acc-personal" },
+          ],
+        }),
+        "utf8",
+      );
+
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "complete", "--", "switch", ""],
+        stdout: "pipe",
+        stderr: "pipe",
+        env: {
+          ...process.env,
+          XDG_CONFIG_HOME: tempConfigHome,
+        },
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("acc-work");
+      expect(output).toContain("Work");
+      expect(output).toContain("acc-personal");
     });
 
     it("rejects invalid --secret-store values", async () => {

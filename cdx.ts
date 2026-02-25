@@ -1,9 +1,11 @@
 #!/usr/bin/env bun
+import { existsSync, readFileSync } from "node:fs";
 import tab from "@bomb.sh/tab/commander";
 import { Command, InvalidArgumentError } from "commander";
 import pkg from "./package.json";
 import { loadConfiguredSecretStoreSelection } from "./lib/config";
 import { exitWithCommandError } from "./lib/commands/errors";
+import { getPaths } from "./lib/paths";
 import {
   registerDefaultInteractiveAction,
   registerDoctorCommand,
@@ -70,6 +72,113 @@ const getCompletionParseArgs = (argv: string[]): string[] | null => {
   }
 
   return argv.slice(separatorIndex + 1);
+};
+
+type TabCompletion = ReturnType<typeof tab>;
+
+type CompletionAccount = {
+  accountId: string;
+  label?: string;
+};
+
+const readCompletionAccounts = (): CompletionAccount[] => {
+  try {
+    const { configPath } = getPaths();
+    if (!existsSync(configPath)) {
+      return [];
+    }
+
+    const raw = readFileSync(configPath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      accounts?: Array<{ accountId?: unknown; label?: unknown }>;
+    };
+
+    if (!Array.isArray(parsed.accounts)) {
+      return [];
+    }
+
+    const accounts: CompletionAccount[] = [];
+    for (const account of parsed.accounts) {
+      if (typeof account.accountId !== "string" || !account.accountId.trim()) {
+        continue;
+      }
+
+      accounts.push({
+        accountId: account.accountId,
+        ...(typeof account.label === "string" && account.label.trim()
+          ? { label: account.label }
+          : {}),
+      });
+    }
+
+    return accounts;
+  } catch {
+    return [];
+  }
+};
+
+const addConfiguredAccountCompletions = (
+  complete: (value: string, description: string) => void,
+): void => {
+  const accounts = readCompletionAccounts();
+  const seen = new Set<string>();
+
+  for (const account of accounts) {
+    if (!seen.has(account.accountId)) {
+      seen.add(account.accountId);
+      const description = account.label
+        ? `Account ID (${account.label})`
+        : "Account ID";
+      complete(account.accountId, description);
+    }
+
+    if (account.label && !seen.has(account.label)) {
+      seen.add(account.label);
+      complete(account.label, `Label for ${account.accountId}`);
+    }
+  }
+};
+
+const attachAccountArgumentCompletion = (
+  completion: TabCompletion,
+  commandName: string,
+  argumentName: string,
+): void => {
+  const command = completion.commands.get(commandName);
+  if (!command) {
+    return;
+  }
+
+  command.argument(argumentName, (complete) => {
+    addConfiguredAccountCompletions(complete);
+  });
+};
+
+const configureTabCompletion = (completion: TabCompletion): void => {
+  const secretStoreOption = completion.options.get("secret-store");
+  if (secretStoreOption) {
+    secretStoreOption.handler = (complete) => {
+      complete("auto", "Automatic backend selection");
+      complete("legacy-keychain", "macOS legacy keychain backend");
+    };
+  }
+
+  attachAccountArgumentCompletion(completion, "switch", "account-id");
+  attachAccountArgumentCompletion(completion, "relogin", "account");
+  attachAccountArgumentCompletion(completion, "usage", "account");
+  attachAccountArgumentCompletion(completion, "label", "account");
+
+  const helpCommand = completion.commands.get("help");
+  if (helpCommand) {
+    helpCommand.argument("command", (complete) => {
+      for (const [name, command] of completion.commands.entries()) {
+        if (name === "") {
+          continue;
+        }
+        complete(name, command.description || "Command");
+      }
+    });
+  }
 };
 
 export const getMacOSKeychainPromptWarning = (
@@ -161,6 +270,7 @@ export const createProgram = (
 const main = async () => {
   const program = createProgram();
   const completion = tab(program);
+  configureTabCompletion(completion);
 
   const completionArgs = getCompletionParseArgs(process.argv);
   if (completionArgs) {
