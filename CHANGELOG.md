@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.8.3
+
 ### Improvements
 
 - After `cdx update-self` completes successfully, print the detected installed version directly instead of asking users to run `cdx version` manually.

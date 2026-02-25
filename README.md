@@ -6,15 +6,12 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.2
+### 1.8.3
 
-#### Features
+#### Improvements
 
-- Added `update-self` command aliases: `self-update`, `update`, and `updte`.
-
-#### Fixes
-
-- Added an interactive Linux troubleshooting checklist in `cdx doctor` when the secure-store probe fails, guiding sequential checks for `gnome-keyring`, `secret-tool`, and running `gnome-keyring-daemon`.
+- `cdx update-self` now prints the detected installed version directly after a successful update, so you don't need to run `cdx version` manually.
+- Linux `cdx doctor` guided checks now offer interactive recovery when `gnome-keyring-daemon` is not running: start now, or (when detectable as disabled) enable autostart and start now.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
