@@ -195,6 +195,7 @@ describe("cdx CLI", () => {
         env: {
           ...process.env,
           XDG_CONFIG_HOME: tempConfigHome,
+          APPDATA: tempConfigHome,
         },
       });
 
