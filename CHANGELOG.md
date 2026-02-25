@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.8.5
+
+### Fixes
+
+- Linux doctor checklist: avoid false-positive `gnome-keyring-daemon` running checks by preferring `ps -A -o args=` matching (with `pgrep -f` fallback), so the checker no longer reports running just because the probe command itself contains the daemon name.
+- Linux doctor checklist: when all basic checks pass but the secure-store probe still fails, print explicit guidance that the issue may be a locked keyring, missing default collection, or D-Bus/session mismatch.
+
 ## 1.8.4
 
 ### Fixes

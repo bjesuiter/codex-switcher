@@ -6,11 +6,11 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.4
+### 1.8.5
 
 #### Fixes
 
-- Linux `cdx doctor` guided checks now detect `gnome-keyring-daemon` with a full-command `pgrep -f` match, fixing false negatives/errors on systems where `pgrep -x` cannot match process names longer than 15 characters.
+- Linux `cdx doctor` guided checks now avoid false-positive `gnome-keyring-daemon` running detection by preferring `ps` command-line matching (with a `pgrep` fallback), and provide clearer guidance when basic checks pass but the secure-store probe still fails (for example locked keyring/default collection/session bus issues).
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
