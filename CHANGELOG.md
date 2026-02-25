@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.8.4
+
+### Fixes
+
+- Linux doctor checklist: fix `gnome-keyring-daemon` process detection by switching from `pgrep -x` (fails for names longer than 15 chars on some systems) to a full-command match via `pgrep -f`.
+
 ## 1.8.3
 
 ### Improvements

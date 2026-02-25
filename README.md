@@ -6,12 +6,11 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.3
+### 1.8.4
 
-#### Improvements
+#### Fixes
 
-- `cdx update-self` now prints the detected installed version directly after a successful update, so you don't need to run `cdx version` manually.
-- Linux `cdx doctor` guided checks now offer interactive recovery when `gnome-keyring-daemon` is not running: start now, or (when detectable as disabled) enable autostart and start now.
+- Linux `cdx doctor` guided checks now detect `gnome-keyring-daemon` with a full-command `pgrep -f` match, fixing false negatives/errors on systems where `pgrep -x` cannot match process names longer than 15 characters.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
