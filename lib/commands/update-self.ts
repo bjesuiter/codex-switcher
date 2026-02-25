@@ -31,7 +31,10 @@ const quoteIfNeeded = (value: string): string => {
 export const formatShellCommand = (command: string, args: string[]): string =>
   [command, ...args].map(quoteIfNeeded).join(" ");
 
-const executeUpdate = async (command: string, args: string[]): Promise<void> => {
+const executeUpdate = async (
+  command: string,
+  args: string[],
+): Promise<void> => {
   await new Promise<void>((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: "inherit",
@@ -47,7 +50,9 @@ const executeUpdate = async (command: string, args: string[]): Promise<void> => 
         return;
       }
 
-      reject(new Error(`Update command failed with exit code ${code ?? "unknown"}.`));
+      reject(
+        new Error(`Update command failed with exit code ${code ?? "unknown"}.`),
+      );
     });
   });
 };
@@ -55,14 +60,24 @@ const executeUpdate = async (command: string, args: string[]): Promise<void> => 
 export const registerUpdateSelfCommand = (program: Command): void => {
   program
     .command("update-self")
+    .aliases(["self-update", "update", "updte"])
     .description("Update cdx to the latest version")
-    .option("--manager <manager>", "Select update manager (auto|bun|npm|deno)", "auto")
-    .option("--dry-run", "Print selected manager and update command without executing")
+    .option(
+      "--manager <manager>",
+      "Select update manager (auto|bun|npm|deno)",
+      "auto",
+    )
+    .option(
+      "--dry-run",
+      "Print selected manager and update command without executing",
+    )
     .option("-y, --yes", "Skip confirmation prompt")
     .action(async (options: UpdateSelfOptions) => {
       try {
         const requestedManager = options.manager ?? "auto";
-        if (!(["auto", "bun", "npm", "deno"] as const).includes(requestedManager)) {
+        if (
+          !(["auto", "bun", "npm", "deno"] as const).includes(requestedManager)
+        ) {
           process.stderr.write(
             `Invalid value '${requestedManager}' for --manager. Allowed values: auto, bun, npm, deno.\n`,
           );
@@ -74,7 +89,11 @@ export const registerUpdateSelfCommand = (program: Command): void => {
         const installManager = detectInstallManagerFromPath(executablePath);
         const installContext = classifyInstallContextFromPath(executablePath);
 
-        if (requestedManager === "auto" && installManager === "unknown" && installContext === "local-or-dev") {
+        if (
+          requestedManager === "auto" &&
+          installManager === "unknown" &&
+          installContext === "local-or-dev"
+        ) {
           process.stderr.write(
             "Refusing to auto-update from a local/dev checkout. Re-run with --manager bun|npm|deno.\n",
           );
@@ -95,8 +114,12 @@ export const registerUpdateSelfCommand = (program: Command): void => {
             "Could not determine update manager automatically. Re-run with --manager bun|npm|deno.\n",
           );
           process.stderr.write("Manual update commands:\n");
-          process.stderr.write(`  bun: ${formatShellCommand("bun", ["add", "-g", `${PACKAGE_NAME}@latest`])}\n`);
-          process.stderr.write(`  npm: ${formatShellCommand("npm", ["i", "-g", `${PACKAGE_NAME}@latest`])}\n`);
+          process.stderr.write(
+            `  bun: ${formatShellCommand("bun", ["add", "-g", `${PACKAGE_NAME}@latest`])}\n`,
+          );
+          process.stderr.write(
+            `  npm: ${formatShellCommand("npm", ["i", "-g", `${PACKAGE_NAME}@latest`])}\n`,
+          );
           process.stderr.write(
             `  deno: ${formatShellCommand("deno", ["install", "-g", "-f", "-A", "-n", "cdx", `npm:${PACKAGE_NAME}@latest`])}\n`,
           );
@@ -104,8 +127,14 @@ export const registerUpdateSelfCommand = (program: Command): void => {
         }
 
         const selectedManager: UpdateManager = resolvedManager.manager;
-        const command = buildUpdateInstallCommand(selectedManager, PACKAGE_NAME);
-        const printableCommand = formatShellCommand(command.command, command.args);
+        const command = buildUpdateInstallCommand(
+          selectedManager,
+          PACKAGE_NAME,
+        );
+        const printableCommand = formatShellCommand(
+          command.command,
+          command.args,
+        );
 
         process.stdout.write(`Selected manager: ${selectedManager}\n`);
         process.stdout.write(`Source: ${resolvedManager.source}\n`);
@@ -129,7 +158,9 @@ export const registerUpdateSelfCommand = (program: Command): void => {
 
         await executeUpdate(command.command, command.args);
         process.stdout.write("Update completed.\n");
-        process.stdout.write("Run `cdx version` to verify the installed version.\n");
+        process.stdout.write(
+          "Run `cdx version` to verify the installed version.\n",
+        );
       } catch (error) {
         exitWithCommandError(error);
       }

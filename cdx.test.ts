@@ -38,6 +38,9 @@ describe("cdx CLI", () => {
       const updateSelfCmd = program.commands.find((cmd) => cmd.name() === "update-self");
       expect(updateSelfCmd).toBeDefined();
       expect(updateSelfCmd?.description()).toBe("Update cdx to the latest version");
+      expect(updateSelfCmd?.aliases()).toContain("self-update");
+      expect(updateSelfCmd?.aliases()).toContain("update");
+      expect(updateSelfCmd?.aliases()).toContain("updte");
     });
 
     it("has migrate-secrets command registered", () => {
@@ -152,6 +155,42 @@ describe("cdx CLI", () => {
       expect(result.exitCode).toBe(0);
       expect(output).toContain("Selected manager: npm");
       expect(output).toContain("npm i -g @bjesuiter/codex-switcher@latest");
+    });
+
+    it("supports self-update alias", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "self-update", "--dry-run", "--manager", "npm"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("Selected manager: npm");
+    });
+
+    it("supports update alias", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "update", "--dry-run", "--manager", "npm"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("Selected manager: npm");
+    });
+
+    it("supports updte alias", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "updte", "--dry-run", "--manager", "npm"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("Selected manager: npm");
     });
 
     it("refuses auto update-self in local/dev execution context", async () => {
@@ -284,6 +323,18 @@ describe("cdx CLI", () => {
 
       const output = result.stdout.toString();
       expect(output).toContain("cdx - OpenAI Account Switcher");
+    });
+
+    it("shows help for update command aliases", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "help", "self-update"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("Usage: cdx update-self");
     });
 
     it("fails gracefully with unknown command", async () => {
