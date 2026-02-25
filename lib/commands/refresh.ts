@@ -14,7 +14,10 @@ export const registerReloginCommand = (program: Command): void => {
     .description(
       "Re-authenticate an existing account with full OAuth login (no duplicate account)",
     )
-    .option("--device-flow", "Use OAuth device flow instead of browser callback flow")
+    .option(
+      "--device-flow",
+      "Use OAuth device flow instead of browser callback flow (manual/browser flow is recommended; device flow may fail on some VPS due to Cloudflare)",
+    )
     .argument("[account]", "Account ID or label to re-login")
     .action(async (account: string | undefined, options: { deviceFlow?: boolean }) => {
       try {

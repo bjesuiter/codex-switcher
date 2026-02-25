@@ -153,12 +153,12 @@ cdx migrate-secrets
 | Command | Description |
 |---------|-------------|
 | `cdx` | Interactive mode |
-| `cdx login` | Add a new OpenAI account via OAuth |
-| `cdx login --device-flow` | Add account using OAuth device flow (no local browser callback needed) |
+| `cdx login` | Add a new OpenAI account via OAuth (recommended default flow; supports manual URL copy/paste callback completion) |
+| `cdx login --device-flow` | Add account using OAuth device flow (may fail on some VPS/server IPs due to Cloudflare challenges) |
 | `cdx relogin` | Re-authenticate an existing account via OAuth |
-| `cdx relogin --device-flow` | Re-authenticate interactively using OAuth device flow |
+| `cdx relogin --device-flow` | Re-authenticate interactively using OAuth device flow (may fail on some VPS/server IPs due to Cloudflare challenges) |
 | `cdx relogin <account>` | Re-authenticate a specific account by ID or label |
-| `cdx relogin <account> --device-flow` | Re-authenticate specific account using OAuth device flow |
+| `cdx relogin <account> --device-flow` | Re-authenticate specific account using OAuth device flow (may fail on some VPS/server IPs due to Cloudflare challenges) |
 | `cdx switch` | Switch account (interactive picker) |
 | `cdx switch --next` | Cycle to next account |
 | `cdx switch <id>` | Switch to specific account |
@@ -176,6 +176,8 @@ cdx migrate-secrets
 | `cdx --help` | Show help |
 | `cdx --version` | Show version |
 | `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
+
+> Tip: On SSH/VPS, prefer `cdx login` (without `--device-flow`) and complete login via manual callback URL/code copy-paste. Device flow can be blocked by Cloudflare challenge pages.
 
 ### Shell completion
 

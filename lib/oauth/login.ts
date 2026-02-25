@@ -234,36 +234,29 @@ const promptBrowserFallbackChoice = async (): Promise<BrowserFallbackChoice> => 
     p.log.info(
       `Non-interactive terminal detected. Falling back to ${selected === "device" ? "device OAuth flow" : "manual URL copy/paste flow"}.`,
     );
+    if (selected === "device") {
+      p.log.info(
+        "When interactive, manual URL copy/paste flow is recommended because device flow may be blocked by Cloudflare on some VPS/server IPs.",
+      );
+    }
     return selected;
   }
 
-  const options: Array<{ value: BrowserFallbackChoice; label: string; hint?: string }> = remoteHint
-    ? [
-        {
-          value: "device",
-          label: "Use device OAuth flow",
-          hint: "Recommended on SSH/remote servers",
-        },
-        {
-          value: "manual",
-          label: "Finish manually by copying URL",
-          hint: "Open URL on any machine and paste callback URL/code back here",
-        },
-        { value: "cancel", label: "Cancel login" },
-      ]
-    : [
-        {
-          value: "manual",
-          label: "Finish manually by copying URL",
-          hint: "Open URL on any machine and paste callback URL/code back here",
-        },
-        {
-          value: "device",
-          label: "Use device OAuth flow",
-          hint: "Best for headless/remote environments",
-        },
-        { value: "cancel", label: "Cancel login" },
-      ];
+  const options: Array<{ value: BrowserFallbackChoice; label: string; hint?: string }> = [
+    {
+      value: "manual",
+      label: "Finish manually by copying URL (recommended)",
+      hint: remoteHint
+        ? "Best on SSH/VPS: open URL on any machine and paste callback URL/code back here"
+        : "Open URL on any machine and paste callback URL/code back here",
+    },
+    {
+      value: "device",
+      label: "Use device OAuth flow",
+      hint: "May fail on some VPS/servers due to Cloudflare challenge",
+    },
+    { value: "cancel", label: "Cancel login" },
+  ];
 
   const selection = await p.select({
     message: "Browser launcher is unavailable. How do you want to continue?",
@@ -355,6 +348,13 @@ const promptManualAuthorizationCode = async (
 const runDeviceOAuthFlow = async (
   useSpinner: boolean,
 ): Promise<SuccessfulTokenResult | null> => {
+  p.log.info(
+    "Device OAuth flow may fail on some VPS/servers because auth.openai.com can return a Cloudflare challenge.",
+  );
+  p.log.info(
+    "Recommended alternative: run login without --device-flow and use manual URL copy/paste callback completion.",
+  );
+
   const deviceFlowResult = await startDeviceAuthorizationFlow();
   if (deviceFlowResult.type !== "success") {
     p.log.error("Device OAuth flow is not available right now.");

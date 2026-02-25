@@ -15,7 +15,10 @@ export const registerLoginCommand = (
   program
     .command("login")
     .description("Add a new OpenAI account via OAuth")
-    .option("--device-flow", "Use OAuth device flow instead of browser callback flow")
+    .option(
+      "--device-flow",
+      "Use OAuth device flow instead of browser callback flow (manual/browser flow is recommended; device flow may fail on some VPS due to Cloudflare)",
+    )
     .action(async (options: { deviceFlow?: boolean }) => {
       try {
         const result = await runLogin({
