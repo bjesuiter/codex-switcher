@@ -1,4 +1,5 @@
 import path from "node:path";
+import { spawn } from "node:child_process";
 import * as p from "@clack/prompts";
 import type { Command } from "commander";
 import { getPaths } from "../paths";
@@ -77,6 +78,185 @@ const getSecretStoreProbeGuidance = (platform: NodeJS.Platform): string | null =
   }
 
   return null;
+};
+
+type CommandCaptureResult = {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  error?: string;
+};
+
+type LinuxSecretStoreChecklistItem = {
+  question: string;
+  ok: boolean;
+  details?: string;
+  hint?: string;
+};
+
+const isInteractiveTerminal = (): boolean =>
+  Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
+
+const runCommandCapture = async (
+  command: string,
+  args: string[],
+): Promise<CommandCaptureResult> =>
+  await new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let spawnError: string | null = null;
+
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    child.once("error", (error) => {
+      spawnError = error.message;
+    });
+
+    child.once("close", (code) => {
+      resolve({
+        ok: spawnError === null && code === 0,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        ...(spawnError ? { error: spawnError } : {}),
+      });
+    });
+  });
+
+const extractCommandFailureDetails = (result: CommandCaptureResult): string | undefined =>
+  result.error || result.stderr || result.stdout || undefined;
+
+const isCommandAvailable = async (commandName: string): Promise<boolean> => {
+  const shellCheck = await runCommandCapture("sh", [
+    "-lc",
+    `command -v ${commandName} >/dev/null 2>&1`,
+  ]);
+
+  return shellCheck.ok;
+};
+
+const checkGnomeKeyringRunning = async (): Promise<{
+  ok: boolean;
+  details?: string;
+}> => {
+  if (await isCommandAvailable("pgrep")) {
+    const pgrepResult = await runCommandCapture("pgrep", [
+      "-x",
+      "gnome-keyring-daemon",
+    ]);
+
+    if (pgrepResult.ok) {
+      return { ok: true };
+    }
+
+    return {
+      ok: false,
+      details: extractCommandFailureDetails(pgrepResult) ??
+        "No gnome-keyring-daemon process found.",
+    };
+  }
+
+  const psFallback = await runCommandCapture("sh", [
+    "-lc",
+    "ps -A -o comm= | grep -q '^gnome-keyring-daemon$'",
+  ]);
+
+  if (psFallback.ok) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    details: extractCommandFailureDetails(psFallback) ??
+      "No gnome-keyring-daemon process found.",
+  };
+};
+
+const runLinuxSecretStoreChecklist = async (): Promise<
+  LinuxSecretStoreChecklistItem[]
+> => {
+  const gnomeKeyringInstalled = await isCommandAvailable("gnome-keyring-daemon");
+  const secretToolInstalled = await isCommandAvailable("secret-tool");
+  const gnomeKeyringRunning = await checkGnomeKeyringRunning();
+
+  return [
+    {
+      question: "Is gnome-keyring installed?",
+      ok: gnomeKeyringInstalled,
+      hint:
+        "Install the `gnome-keyring` package, then log out/in (or restart your session).",
+    },
+    {
+      question: "Is secret-tool installed?",
+      ok: secretToolInstalled,
+      hint:
+        "Install the package that provides `secret-tool` (often `libsecret-tools`).",
+    },
+    {
+      question: "Is gnome-keyring running?",
+      ok: gnomeKeyringRunning.ok,
+      details: gnomeKeyringRunning.details,
+      hint:
+        "Start/unlock gnome-keyring-daemon in your session (for a quick test: `gnome-keyring-daemon --start --components=secrets`).",
+    },
+  ];
+};
+
+const maybeRunLinuxSecretStoreChecklist = async (): Promise<void> => {
+  if (!isInteractiveTerminal()) {
+    process.stdout.write(
+      "  Tip: run `cdx doctor` in an interactive terminal to start guided Linux secret-store checks.\n",
+    );
+    return;
+  }
+
+  const shouldRunChecklist = await p.confirm({
+    message:
+      "Run guided Linux secret-store checks now? (gnome-keyring installed, secret-tool installed, gnome-keyring running)",
+    initialValue: true,
+  });
+
+  if (p.isCancel(shouldRunChecklist) || !shouldRunChecklist) {
+    process.stdout.write("  Guided Linux checks skipped.\n");
+    return;
+  }
+
+  process.stdout.write("  Guided Linux checks:\n");
+
+  const checklist = await runLinuxSecretStoreChecklist();
+  let passed = 0;
+
+  for (let i = 0; i < checklist.length; i++) {
+    const item = checklist[i];
+    if (item.ok) {
+      passed += 1;
+      process.stdout.write(`    ${i + 1}/3 ${item.question} yes\n`);
+      continue;
+    }
+
+    process.stdout.write(`    ${i + 1}/3 ${item.question} no\n`);
+
+    if (item.details) {
+      process.stdout.write(`      details: ${item.details}\n`);
+    }
+
+    if (item.hint) {
+      process.stdout.write(`      hint: ${item.hint}\n`);
+    }
+  }
+
+  process.stdout.write(
+    `  Guided checklist summary: ${passed}/${checklist.length} checks passed.\n`,
+  );
 };
 
 export const registerDoctorCommand = (program: Command): void => {
@@ -189,6 +369,10 @@ export const registerDoctorCommand = (program: Command): void => {
             const guidance = getSecretStoreProbeGuidance(process.platform);
             if (guidance) {
               process.stdout.write(`  ${guidance}\n`);
+            }
+
+            if (process.platform === "linux") {
+              await maybeRunLinuxSecretStoreChecklist();
             }
           }
         }
