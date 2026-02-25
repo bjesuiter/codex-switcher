@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.8.2
+
+### Features
+
+- Add `update-self` command aliases: `self-update`, `update`, and `updte`.
+
+### Fixes
+
+- Add an interactive Linux troubleshooting checklist in `cdx doctor` when the secure-store probe fails, guiding users through sequential checks for `gnome-keyring` install status, `secret-tool` availability, and whether `gnome-keyring-daemon` is running.
+
 ## 1.8.1
 
 ### Fixes

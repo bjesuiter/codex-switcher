@@ -6,12 +6,15 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.1
+### 1.8.2
+
+#### Features
+
+- Added `update-self` command aliases: `self-update`, `update`, and `updte`.
 
 #### Fixes
 
-- Added platform-native secure-store write/read/delete probes to `cdx doctor` on Linux, macOS, and Windows, so runtime secure-store failures are detected directly instead of only reporting adapter capability.
-- Linux secure-store error handling now treats Secret Service `no result found` responses as missing-entry cases and classifies generic `Couldn't access platform secure storage` failures as unavailable-store errors with actionable guidance.
+- Added an interactive Linux troubleshooting checklist in `cdx doctor` when the secure-store probe fails, guiding sequential checks for `gnome-keyring`, `secret-tool`, and running `gnome-keyring-daemon`.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
@@ -170,6 +173,8 @@ cdx migrate-secrets
 | `cdx doctor --check-keychain-acl` | Detect macOS keychain ACL/runtime mismatches (`cdx`/Bun vs legacy `security` CLI), warn about prompt-heavy setups, and suggest `cdx migrate-secrets` (slow) |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
+| `cdx update-self` | Update cdx to the latest version |
+| `cdx self-update` / `cdx update` / `cdx updte` | Aliases for `cdx update-self` |
 | `cdx help [command]` | Show help for all commands or one command |
 | `cdx complete <shell>` | Generate shell completion script (`zsh`, `bash`, `fish`, `powershell`) |
 | `cdx version` | Show CLI version |
