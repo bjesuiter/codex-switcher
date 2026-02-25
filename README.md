@@ -6,12 +6,19 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.7.4
+### 1.8.0
+
+#### Features
+
+- Added manual OAuth URL clipboard assist for login/relogin fallback flow, including an opt-in copy prompt and non-blocking behavior.
+- Added cross-platform clipboard copy strategies for auth URLs (local clipboard commands + OSC52 terminal fallback).
+- Added tmux/screen OSC52 framing support and fallback copy-command hints when auto-copy is unavailable.
 
 #### Fixes
 
-- Detect Cloudflare/bot-protection HTML challenge responses during OAuth device flow startup and token polling, and report an explicit `cloudflare_challenge` reason instead of only a generic HTTP 403.
-- When that challenge is detected, show a clear workaround: retry without `--device-flow` to use browser/manual callback flow.
+- Clarified fallback guidance: manual URL copy/paste flow is now the recommended browser-launch fallback, while `--device-flow` may fail on some VPS/server IPs due to Cloudflare challenges.
+- Linux secure-store login reliability: treat native Secret Service "no matching entry" responses as missing-entry cases and improve unavailable-store error guidance.
+- Added Mosh-specific clipboard heuristics/warnings so OSC52 copy reports are less misleading when clipboard updates are unreliable.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 

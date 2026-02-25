@@ -2,11 +2,20 @@
 
 ## Unreleased
 
+## 1.8.0
+
+### Features
+
+- Add manual OAuth URL clipboard assist in login/relogin manual flow, including an opt-in "copy URL" prompt and non-blocking behavior.
+- Add cross-platform clipboard strategy support for manual auth URLs: local clipboard commands (`pbcopy`, `clip`/PowerShell, `wl-copy`/`xclip`/`xsel`) plus OSC52 terminal clipboard fallback.
+- Add OSC52 framing support for tmux/screen sessions and actionable fallback copy-command hints when automatic clipboard copy is unavailable.
+
 ### Fixes
 
 - Make manual URL copy/paste callback flow the recommended browser-launch fallback option in interactive login prompts.
 - Add explicit guidance that `--device-flow` may fail on some VPS/server IPs due to Cloudflare challenge blocking, and recommend retrying with the default login flow.
 - Linux secure-store: normalize native Secret Service "no matching entry" errors as missing-entry cases, retry writes via Secret Service fallback when native writes fail on first save, and emit clearer actionable errors when the secure store backend is unavailable.
+- Add Mosh-specific clipboard heuristics: keep OSC52 as best-effort, warn about reliability limits, and point users to fallback copy commands/manual copy when needed.
 
 ## 1.7.4
 
