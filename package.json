@@ -10,6 +10,7 @@
     "build": "tsdown && bun run scripts/build-dist-pkg.ts",
     "prerelease": "bun run build",
     "release": "npm publish --access public ./dist",
+    "wait-npm-latest": "bun run scripts/wait-for-npm-latest.ts",
     "test-npm-install": "bun run playground/test-npm-install.ts"
   },
   "keywords": [
