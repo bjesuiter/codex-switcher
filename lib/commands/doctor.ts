@@ -7,6 +7,7 @@ import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
 import { runSecretStoreWriteReadProbe } from "../secrets/probe";
 import {
   createRuntimeSecretStoreAdapter,
+  createSecretStoreAdapterFromSelection,
   getSecretStoreAdapter,
   isMissingSecretStoreEntryError,
 } from "../secrets/store";
@@ -25,6 +26,57 @@ const hasRuntimeTrustedApp = (
 
     return path.basename(trustedApp).toLowerCase() === runtimeBaseName;
   });
+};
+
+const getSecretStoreProbeHeading = (platform: NodeJS.Platform): string | null => {
+  if (platform === "linux") {
+    return "Linux secure-store probe";
+  }
+
+  if (platform === "darwin") {
+    return "macOS secure-store probe";
+  }
+
+  if (platform === "win32") {
+    return "Windows secure-store probe";
+  }
+
+  return null;
+};
+
+const createProbeAdapterForCurrentPlatform = () => {
+  const currentAdapter = getSecretStoreAdapter();
+
+  if (process.platform === "darwin" && currentAdapter.id === "macos-legacy-keychain") {
+    return createSecretStoreAdapterFromSelection("legacy-keychain", "darwin");
+  }
+
+  return createRuntimeSecretStoreAdapter(process.platform);
+};
+
+const getSecretStoreProbeGuidance = (platform: NodeJS.Platform): string | null => {
+  if (platform === "linux") {
+    return (
+      "Suggested fix: ensure Secret Service is running/unlocked " +
+      "(for example gnome-keyring + secret-tool), then retry login."
+    );
+  }
+
+  if (platform === "darwin") {
+    return (
+      "Suggested fix: ensure Keychain Access is unlocked and allows this runtime/toolchain " +
+      "to store/read passwords, then retry login."
+    );
+  }
+
+  if (platform === "win32") {
+    return (
+      "Suggested fix: ensure Windows Credential Manager is available for this user session, " +
+      "then retry login."
+    );
+  }
+
+  return null;
 };
 
 export const registerDoctorCommand = (program: Command): void => {
@@ -122,9 +174,10 @@ export const registerDoctorCommand = (program: Command): void => {
           }
         }
 
-        if (process.platform === "linux") {
-          process.stdout.write("\nLinux secure-store probe:\n");
-          const probeAdapter = createRuntimeSecretStoreAdapter("linux");
+        const probeHeading = getSecretStoreProbeHeading(process.platform);
+        if (probeHeading) {
+          process.stdout.write(`\n${probeHeading}:\n`);
+          const probeAdapter = createProbeAdapterForCurrentPlatform();
           const probeResult = await runSecretStoreWriteReadProbe(probeAdapter);
 
           if (probeResult.ok) {
@@ -133,9 +186,10 @@ export const registerDoctorCommand = (program: Command): void => {
             process.stdout.write(
               `  ⚠ ${probeResult.stage} failed: ${probeResult.error.message}\n`,
             );
-            process.stdout.write(
-              "  Suggested fix: ensure Secret Service is running/unlocked (for example gnome-keyring + secret-tool), then retry login.\n",
-            );
+            const guidance = getSecretStoreProbeGuidance(process.platform);
+            if (guidance) {
+              process.stdout.write(`  ${guidance}\n`);
+            }
           }
         }
 
