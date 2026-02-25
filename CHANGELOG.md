@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.7.3
+
+### Fixes
+
+- Add recovery for OAuth callback port conflicts (`127.0.0.1:1455`) during login/relogin:
+  - detect `EADDRINUSE` as a port-in-use condition
+  - prompt to kill the existing listener and retry, switch to device flow, or cancel
+  - show detected PID/command details when available before confirmation
+- Improve callback server startup diagnostics by exposing startup error reason/code details, making port/listen failures easier to troubleshoot.
+
 ## 1.7.2
 
 ### Fixes

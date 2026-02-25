@@ -12,6 +12,7 @@ import {
   type AuthorizationFlow,
   type TokenResult,
 } from "./auth";
+import { CALLBACK_PORT } from "./constants";
 import { startOAuthServer } from "./server";
 
 export type AuthFlowMode = "auto" | "device";
@@ -27,6 +28,12 @@ export type PerformRefreshOptions = {
 
 type SuccessfulTokenResult = Extract<TokenResult, { type: "success" }>;
 type BrowserFallbackChoice = "manual" | "device" | "cancel";
+type PortConflictChoice = "kill_and_retry" | "device" | "cancel";
+
+export type ListeningProcess = {
+  pid: number;
+  command?: string;
+};
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,6 +48,138 @@ const isLikelyRemoteEnvironment = (): boolean => {
   }
 
   return !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY;
+};
+
+export const parseLsofListeningProcess = (
+  output: string,
+): ListeningProcess | null => {
+  const lines = output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+  let pid: number | null = null;
+  let command: string | undefined;
+
+  for (const line of lines) {
+    if (line.startsWith("p") && pid === null) {
+      const parsedPid = Number.parseInt(line.slice(1), 10);
+      if (!Number.isNaN(parsedPid) && parsedPid > 0) {
+        pid = parsedPid;
+      }
+      continue;
+    }
+
+    if (line.startsWith("c") && pid !== null && !command) {
+      const parsedCommand = line.slice(1).trim();
+      if (parsedCommand) {
+        command = parsedCommand;
+      }
+    }
+
+    if (pid !== null && command) {
+      break;
+    }
+  }
+
+  if (pid === null) {
+    return null;
+  }
+
+  return {
+    pid,
+    ...(command ? { command } : {}),
+  };
+};
+
+export const parseWindowsNetstatListeningPid = (
+  output: string,
+  port: number,
+): number | null => {
+  const lines = output.split(/\r?\n/);
+  const portSuffix = `:${port}`;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || !/LISTENING/i.test(line) || !line.includes(portSuffix)) {
+      continue;
+    }
+
+    const parts = line.split(/\s+/);
+    const pidRaw = parts.at(-1);
+    const parsedPid = pidRaw ? Number.parseInt(pidRaw, 10) : Number.NaN;
+    if (!Number.isNaN(parsedPid) && parsedPid > 0) {
+      return parsedPid;
+    }
+  }
+
+  return null;
+};
+
+export const findListeningProcessOnPort = (
+  port: number,
+  platform: NodeJS.Platform = process.platform,
+): ListeningProcess | null => {
+  if (platform === "win32") {
+    const netstat = Bun.spawnSync({
+      cmd: ["netstat", "-ano", "-p", "tcp"],
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    if (netstat.exitCode !== 0) {
+      return null;
+    }
+
+    const netstatOutput = Buffer.from(netstat.stdout).toString("utf8");
+    const pid = parseWindowsNetstatListeningPid(netstatOutput, port);
+    if (!pid) {
+      return null;
+    }
+
+    const tasklist = Bun.spawnSync({
+      cmd: ["tasklist", "/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"],
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    if (tasklist.exitCode !== 0) {
+      return { pid };
+    }
+
+    const line = Buffer.from(tasklist.stdout).toString("utf8").trim().split(/\r?\n/)[0] ?? "";
+    if (!line || /No tasks are running/i.test(line)) {
+      return { pid };
+    }
+
+    const normalized = line.replace(/^"|"$/g, "");
+    const fields = normalized.split('","');
+    const command = fields[0]?.trim();
+
+    return {
+      pid,
+      ...(command ? { command } : {}),
+    };
+  }
+
+  const lsof = Bun.spawnSync({
+    cmd: ["lsof", "-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-FpPc"],
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  if (lsof.exitCode !== 0) {
+    return null;
+  }
+
+  return parseLsofListeningProcess(Buffer.from(lsof.stdout).toString("utf8"));
+};
+
+export const killProcessByPid = (pid: number): { ok: boolean; error?: string } => {
+  try {
+    process.kill(pid, "SIGTERM");
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: message };
+  }
 };
 
 export const parseOAuthCallbackInput = (
@@ -136,6 +275,42 @@ const promptBrowserFallbackChoice = async (): Promise<BrowserFallbackChoice> => 
   }
 
   return selection as BrowserFallbackChoice;
+};
+
+const promptPortConflictChoice = async (
+  listeningProcess: ListeningProcess | null,
+): Promise<PortConflictChoice> => {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    p.log.info("Non-interactive terminal detected. Falling back to device OAuth flow.");
+    return "device";
+  }
+
+  const killHint = listeningProcess
+    ? `PID ${listeningProcess.pid}${listeningProcess.command ? ` (${listeningProcess.command})` : ""}`
+    : "Attempt to free port and retry";
+
+  const selection = await p.select({
+    message: `Port ${CALLBACK_PORT} is already in use. How do you want to continue?`,
+    options: [
+      {
+        value: "kill_and_retry",
+        label: `Kill existing listener on port ${CALLBACK_PORT} and retry browser flow`,
+        hint: killHint,
+      },
+      {
+        value: "device",
+        label: "Continue with OAuth device flow",
+        hint: "No local callback server required",
+      },
+      { value: "cancel", label: "Cancel login" },
+    ],
+  });
+
+  if (p.isCancel(selection)) {
+    return "cancel";
+  }
+
+  return selection as PortConflictChoice;
 };
 
 const promptManualAuthorizationCode = async (
@@ -303,12 +478,80 @@ const requestTokenViaOAuth = async (
     return runDeviceOAuthFlow(options.useSpinner);
   }
 
-  const server = await startOAuthServer(flow.state);
+  let server = await startOAuthServer(flow.state);
 
   if (!server.ready) {
-    p.log.error("Failed to start local server on port 1455.");
-    p.log.info("Please ensure the port is not in use.");
-    return null;
+    if (server.reason === "port_in_use") {
+      p.log.warning(`Local callback server port ${CALLBACK_PORT} is already in use.`);
+
+      const listeningProcess = findListeningProcessOnPort(CALLBACK_PORT);
+      if (listeningProcess) {
+        p.log.info(
+          `Detected listener on port ${CALLBACK_PORT}: PID ${listeningProcess.pid}${listeningProcess.command ? ` (${listeningProcess.command})` : ""}`,
+        );
+      }
+
+      const choice = await promptPortConflictChoice(listeningProcess);
+
+      if (choice === "cancel") {
+        p.log.info("Login cancelled.");
+        return null;
+      }
+
+      if (choice === "device") {
+        return runDeviceOAuthFlow(options.useSpinner);
+      }
+
+      if (listeningProcess) {
+        const confirmed = await p.confirm({
+          message: `Kill PID ${listeningProcess.pid}${listeningProcess.command ? ` (${listeningProcess.command})` : ""}?`,
+          initialValue: false,
+        });
+
+        if (p.isCancel(confirmed) || !confirmed) {
+          p.log.info("Cancelled. No process was terminated.");
+          return null;
+        }
+
+        const killResult = killProcessByPid(listeningProcess.pid);
+        if (!killResult.ok) {
+          p.log.error(`Failed to terminate PID ${listeningProcess.pid}.`);
+          p.log.error(`Technical details: ${killResult.error ?? "unknown error"}`);
+          p.log.info("Try device flow instead: cdx login --device-flow");
+          return null;
+        }
+
+        p.log.success(`Sent SIGTERM to PID ${listeningProcess.pid}. Retrying local server...`);
+        await sleep(250);
+      } else {
+        p.log.warning(
+          `Could not identify which process is listening on port ${CALLBACK_PORT}. Retrying once...`,
+        );
+      }
+
+      server = await startOAuthServer(flow.state);
+      if (!server.ready) {
+        p.log.error(`Failed to start local server on port ${CALLBACK_PORT} after retry.`);
+        if (server.error) {
+          p.log.error(`Technical details: ${server.error}`);
+        }
+        if (server.errorCode) {
+          p.log.error(`Error code: ${server.errorCode}`);
+        }
+        p.log.info("Try device flow instead: cdx login --device-flow");
+        return null;
+      }
+    } else {
+      p.log.error(`Failed to start local server on port ${CALLBACK_PORT}.`);
+      if (server.error) {
+        p.log.error(`Technical details: ${server.error}`);
+      }
+      if (server.errorCode) {
+        p.log.error(`Error code: ${server.errorCode}`);
+      }
+      p.log.info("Please ensure the port is not in use.");
+      return null;
+    }
   }
 
   const spinner = options.useSpinner ? p.spinner() : null;

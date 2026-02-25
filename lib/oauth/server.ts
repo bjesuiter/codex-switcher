@@ -26,9 +26,14 @@ export type OAuthServerResult = {
   code: string;
 };
 
+export type OAuthServerStartupReason = "port_in_use" | "listen_failed";
+
 export type OAuthServer = {
   port: number;
   ready: boolean;
+  reason?: OAuthServerStartupReason;
+  error?: string;
+  errorCode?: string;
   close: () => void;
   waitForCode: () => Promise<OAuthServerResult | null>;
 };
@@ -107,10 +112,18 @@ export const startOAuthServer = (state: string): Promise<OAuthServer> => {
           waitForCode: () => codePromise,
         });
       })
-      .on("error", () => {
+      .on("error", (error: unknown) => {
+        const err = error as NodeJS.ErrnoException;
+        const reason: OAuthServerStartupReason = err?.code === "EADDRINUSE"
+          ? "port_in_use"
+          : "listen_failed";
+
         resolve({
           port: CALLBACK_PORT,
           ready: false,
+          reason,
+          ...(typeof err?.message === "string" ? { error: err.message } : {}),
+          ...(typeof err?.code === "string" ? { errorCode: err.code } : {}),
           close: () => {
             try {
               server.close();

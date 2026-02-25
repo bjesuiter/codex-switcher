@@ -6,11 +6,15 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.7.2
+### 1.7.3
 
 #### Fixes
 
-- Improve device OAuth failure diagnostics during login/relogin. When device flow startup or polling fails, `cdx` now prints technical details (HTTP status, OAuth error code, and response/body snippets where available) instead of only showing a generic "not available right now" message.
+- Add recovery for OAuth callback port conflicts (`127.0.0.1:1455`) during login/relogin:
+  - detect `EADDRINUSE` as a port-in-use condition
+  - prompt to kill the existing listener and retry, switch to device flow, or cancel
+  - show detected PID/command details when available before confirmation
+- Improve callback server startup diagnostics by exposing startup error reason/code details, making port/listen failures easier to troubleshoot.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
