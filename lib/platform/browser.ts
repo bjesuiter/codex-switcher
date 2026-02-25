@@ -6,10 +6,13 @@ export type BrowserLauncher = {
   label: string;
 };
 
+export type BrowserLaunchFailureReason = "launcher_missing" | "spawn_failed";
+
 export type BrowserLaunchResult = {
   ok: boolean;
   launcher: BrowserLauncher;
   error?: string;
+  reason?: BrowserLaunchFailureReason;
 };
 
 type SpawnLike = (
@@ -67,18 +70,41 @@ export const getBrowserLauncherCapability = (
 
 export const openBrowserUrl = (
   url: string,
-  spawnImpl: SpawnLike = spawn,
+  options: {
+    spawnImpl?: SpawnLike;
+    platform?: NodeJS.Platform;
+    isCommandAvailableImpl?: typeof isCommandAvailable;
+  } = {},
 ): BrowserLaunchResult => {
-  const launcher = getBrowserLauncher(process.platform, url);
+  const platform = options.platform ?? process.platform;
+  const spawnImpl = options.spawnImpl ?? spawn;
+  const commandAvailable = options.isCommandAvailableImpl ?? isCommandAvailable;
+  const launcher = getBrowserLauncher(platform, url);
+
+  if (!commandAvailable(launcher.command, platform)) {
+    return {
+      ok: false,
+      launcher,
+      reason: "launcher_missing",
+      error: `${launcher.command} not found in PATH`,
+    };
+  }
 
   try {
-    spawnImpl(launcher.command, launcher.args, {
+    const child = spawnImpl(launcher.command, launcher.args, {
       detached: true,
       stdio: "ignore",
-    }).unref();
+    });
+
+    // Prevent unhandled "error" events from crashing the CLI.
+    child.once("error", () => {
+      // Best effort only. Users can still continue by opening the URL manually.
+    });
+
+    child.unref();
     return { ok: true, launcher };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, launcher, error: message };
+    return { ok: false, launcher, reason: "spawn_failed", error: message };
   }
 };

@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import {
   AUTHORIZE_URL,
   CLIENT_ID,
+  DEVICE_CODE_URL,
   REDIRECT_URI,
   SCOPE,
   TOKEN_URL,
@@ -32,6 +33,23 @@ export type AuthorizationFlow = {
   url: string;
 };
 
+export type DeviceAuthorizationFlow = {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete?: string;
+  expiresIn: number;
+  interval: number;
+};
+
+export type DeviceTokenResult =
+  | TokenResult
+  | { type: "pending"; interval: number }
+  | { type: "slow_down"; interval: number }
+  | { type: "access_denied" }
+  | { type: "expired" }
+  | { type: "failed" };
+
 export const createState = (): string => {
   return randomBytes(16).toString("hex");
 };
@@ -53,6 +71,130 @@ export const createAuthorizationFlow = async (): Promise<AuthorizationFlow> => {
   url.searchParams.set("originator", "codex_cli_rs");
 
   return { pkce, state, url: url.toString() };
+};
+
+export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizationFlow | null> => {
+  try {
+    const res = await fetch(DEVICE_CODE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+      }),
+    });
+
+    if (!res.ok) {
+      return null;
+    }
+
+    const json = (await res.json()) as {
+      device_code?: string;
+      user_code?: string;
+      verification_uri?: string;
+      verification_uri_complete?: string;
+      expires_in?: number;
+      interval?: number;
+    };
+
+    if (
+      !json?.device_code ||
+      !json?.user_code ||
+      !json?.verification_uri ||
+      typeof json?.expires_in !== "number"
+    ) {
+      return null;
+    }
+
+    return {
+      deviceCode: json.device_code,
+      userCode: json.user_code,
+      verificationUri: json.verification_uri,
+      verificationUriComplete: json.verification_uri_complete,
+      expiresIn: json.expires_in,
+      interval: typeof json.interval === "number" && json.interval > 0 ? json.interval : 5,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const pollDeviceAuthorizationToken = async (
+  deviceCode: string,
+): Promise<DeviceTokenResult> => {
+  try {
+    const res = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: deviceCode,
+        client_id: CLIENT_ID,
+      }),
+    });
+
+    if (res.ok) {
+      const json = (await res.json()) as {
+        access_token?: string;
+        refresh_token?: string;
+        expires_in?: number;
+        id_token?: string;
+      };
+
+      if (
+        !json?.access_token ||
+        !json?.refresh_token ||
+        typeof json?.expires_in !== "number"
+      ) {
+        return { type: "failed" };
+      }
+
+      return {
+        type: "success",
+        access: json.access_token,
+        refresh: json.refresh_token,
+        expires: Date.now() + json.expires_in * 1000,
+        idToken: json.id_token,
+      };
+    }
+
+    let errorCode: string | undefined;
+    let interval: number | undefined;
+
+    try {
+      const json = (await res.json()) as { error?: string; interval?: number };
+      errorCode = json.error;
+      interval = json.interval;
+    } catch {
+      // Ignore JSON parse errors and fall through to failed.
+    }
+
+    if (errorCode === "authorization_pending") {
+      return {
+        type: "pending",
+        interval: typeof interval === "number" && interval > 0 ? interval : 5,
+      };
+    }
+
+    if (errorCode === "slow_down") {
+      return {
+        type: "slow_down",
+        interval: typeof interval === "number" && interval > 0 ? interval : 10,
+      };
+    }
+
+    if (errorCode === "access_denied") {
+      return { type: "access_denied" };
+    }
+
+    if (errorCode === "expired_token") {
+      return { type: "expired" };
+    }
+
+    return { type: "failed" };
+  } catch {
+    return { type: "failed" };
+  }
 };
 
 export const exchangeAuthorizationCode = async (

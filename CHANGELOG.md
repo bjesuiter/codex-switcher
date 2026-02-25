@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Features
+
+- Add explicit device OAuth flow flags for authentication commands:
+  - `cdx login --device-flow`
+  - `cdx relogin --device-flow`
+  - `cdx relogin <account> --device-flow`
+- Add interactive fallback when browser auto-open is unavailable, allowing users to choose between manual URL copy/paste completion and device OAuth flow.
+
+### Fixes
+
+- Prevent login/relogin crashes when the platform browser launcher (for example `xdg-open`) is missing or fails to start.
+- Improve non-interactive/headless auth behavior by automatically choosing a safe fallback path (manual on local terminals, device flow on likely remote Linux/SSH sessions).
+
 ## 1.6.0
 
 ### Features

@@ -98,6 +98,28 @@ describe("cdx CLI", () => {
       expect(output).toContain("--check-keychain-acl");
     });
 
+    it("shows login-specific help for device flow flag", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "login", "--help"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(output).toContain("--device-flow");
+    });
+
+    it("shows relogin-specific help for device flow flag", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "relogin", "--help"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(output).toContain("--device-flow");
+    });
+
     it("shows version with --version flag", async () => {
       const result = Bun.spawnSync({
         cmd: ["bun", "run", "cdx.ts", "--version"],

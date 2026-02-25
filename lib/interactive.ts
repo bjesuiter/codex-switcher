@@ -1,7 +1,11 @@
 import * as p from "@clack/prompts";
 import { writeAllAuthFiles } from "./auth";
 import { configExists, loadConfig, saveConfig } from "./config";
-import { performLogin, performRefresh } from "./oauth/login";
+import {
+  performLogin,
+  performRefresh,
+  type AuthFlowMode,
+} from "./oauth/login";
 import { getSecretStoreAdapter } from "./secrets/store";
 import { writeActiveAuthFilesIfCurrent } from "./refresh";
 import { formatExpiry, getStatus } from "./status";
@@ -144,7 +148,9 @@ const handleAddAccount = async (): Promise<void> => {
   await performLogin();
 };
 
-export const handleReloginAccount = async (): Promise<void> => {
+export const handleReloginAccount = async (
+  reloginOptions: { authFlow?: AuthFlowMode } = {},
+): Promise<void> => {
   if (!configExists()) {
     p.log.warning("No accounts configured. Use 'Add account' first.");
     return;
@@ -189,6 +195,7 @@ export const handleReloginAccount = async (): Promise<void> => {
   try {
     const result = await performRefresh(accountId, account?.label, {
       useSpinner: false,
+      authFlow: reloginOptions.authFlow,
     });
     if (!result) {
       p.log.warning("Re-login was not completed.");

@@ -15,9 +15,12 @@ export const registerLoginCommand = (
   program
     .command("login")
     .description("Add a new OpenAI account via OAuth")
-    .action(async () => {
+    .option("--device-flow", "Use OAuth device flow instead of browser callback flow")
+    .action(async (options: { deviceFlow?: boolean }) => {
       try {
-        const result = await runLogin();
+        const result = await runLogin({
+          authFlow: options.deviceFlow ? "device" : "auto",
+        });
         if (!result) {
           process.stderr.write("Login failed.\n");
           process.exit(1);

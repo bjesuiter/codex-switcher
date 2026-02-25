@@ -158,8 +158,11 @@ cdx migrate-secrets
 |---------|-------------|
 | `cdx` | Interactive mode |
 | `cdx login` | Add a new OpenAI account via OAuth |
+| `cdx login --device-flow` | Add account using OAuth device flow (no local browser callback needed) |
 | `cdx relogin` | Re-authenticate an existing account via OAuth |
+| `cdx relogin --device-flow` | Re-authenticate interactively using OAuth device flow |
 | `cdx relogin <account>` | Re-authenticate a specific account by ID or label |
+| `cdx relogin <account> --device-flow` | Re-authenticate specific account using OAuth device flow |
 | `cdx switch` | Switch account (interactive picker) |
 | `cdx switch --next` | Cycle to next account |
 | `cdx switch <id>` | Switch to specific account |

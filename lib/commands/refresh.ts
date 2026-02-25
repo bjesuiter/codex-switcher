@@ -14,9 +14,12 @@ export const registerReloginCommand = (program: Command): void => {
     .description(
       "Re-authenticate an existing account with full OAuth login (no duplicate account)",
     )
+    .option("--device-flow", "Use OAuth device flow instead of browser callback flow")
     .argument("[account]", "Account ID or label to re-login")
-    .action(async (account: string | undefined) => {
+    .action(async (account: string | undefined, options: { deviceFlow?: boolean }) => {
       try {
+        const authFlow = options.deviceFlow ? "device" : "auto";
+
         if (account) {
           const config = await loadConfig();
           const target = config.accounts.find(
@@ -46,7 +49,9 @@ export const registerReloginCommand = (program: Command): void => {
             `Current token status for ${displayName}: ${expiryState}${secureStoreState}\n`,
           );
 
-          const result = await performRefresh(target.accountId, target.label);
+          const result = await performRefresh(target.accountId, target.label, {
+            authFlow,
+          });
           if (!result) {
             process.stderr.write("Re-login failed.\n");
             process.exit(1);
@@ -59,7 +64,7 @@ export const registerReloginCommand = (program: Command): void => {
           return;
         }
 
-        await handleReloginAccount();
+        await handleReloginAccount({ authFlow });
       } catch (error) {
         exitWithCommandError(error);
       }
