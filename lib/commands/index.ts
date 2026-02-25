@@ -8,4 +8,5 @@ export { registerReloginCommand } from "./refresh";
 export { registerStatusCommand } from "./status";
 export { registerSwitchCommand, switchNext, switchToAccount } from "./switch";
 export { registerUsageCommand } from "./usage";
+export { registerUpdateSelfCommand } from "./update-self";
 export { registerVersionCommand } from "./version";

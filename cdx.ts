@@ -16,6 +16,7 @@ import {
   registerReloginCommand,
   registerStatusCommand,
   registerSwitchCommand,
+  registerUpdateSelfCommand,
   registerUsageCommand,
   registerVersionCommand,
   type LoginDeps,
@@ -260,6 +261,7 @@ export const createProgram = (
   registerStatusCommand(program);
   registerDoctorCommand(program);
   registerUsageCommand(program);
+  registerUpdateSelfCommand(program);
   registerHelpCommand(program);
   registerVersionCommand(program, pkg.version);
   registerDefaultInteractiveAction(program);

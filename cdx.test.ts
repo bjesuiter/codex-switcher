@@ -33,6 +33,13 @@ describe("cdx CLI", () => {
       expect(doctorCmd?.description()).toBe("Show auth file paths and runtime capabilities");
     });
 
+    it("has update-self command registered", () => {
+      const program = createProgram();
+      const updateSelfCmd = program.commands.find((cmd) => cmd.name() === "update-self");
+      expect(updateSelfCmd).toBeDefined();
+      expect(updateSelfCmd?.description()).toBe("Update cdx to the latest version");
+    });
+
     it("has migrate-secrets command registered", () => {
       const program = createProgram();
       const migrateCmd = program.commands.find((cmd) => cmd.name() === "migrate-secrets");
@@ -132,6 +139,32 @@ describe("cdx CLI", () => {
 
       const output = result.stdout.toString().trim();
       expect(output).toBe(pkg.version);
+    });
+
+    it("prints update-self dry-run command for npm", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "update-self", "--dry-run", "--manager", "npm"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(result.exitCode).toBe(0);
+      expect(output).toContain("Selected manager: npm");
+      expect(output).toContain("npm i -g @bjesuiter/codex-switcher@latest");
+    });
+
+    it("refuses auto update-self in local/dev execution context", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "update-self", "--dry-run"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const stderr = result.stderr.toString();
+      expect(result.exitCode).toBe(1);
+      expect(stderr).toContain("local/dev checkout");
+      expect(stderr).toContain("--manager");
     });
 
     it("generates completion script for zsh", async () => {
