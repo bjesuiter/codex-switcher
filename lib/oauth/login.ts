@@ -327,6 +327,15 @@ const maybeCopyAuthorizationUrlToClipboard = async (
 
   if (copyResult.ok) {
     p.log.success(`Copied login URL to clipboard via ${copyResult.method}.`);
+
+    if (copyResult.warning) {
+      p.log.warning(copyResult.warning);
+      const helper = buildClipboardHelperCommand(authorizationUrl);
+      if (helper) {
+        p.log.message(`If needed, run this copy command instead:\n${helper}`);
+      }
+    }
+
     return;
   }
 

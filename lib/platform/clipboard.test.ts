@@ -2,9 +2,19 @@ import { describe, expect, it } from "bun:test";
 import {
   buildClipboardHelperCommand,
   buildOsc52Sequence,
+  isLikelyMoshSession,
   resolveClipboardTargets,
   tryCopyToClipboard,
 } from "./clipboard";
+
+describe("isLikelyMoshSession", () => {
+  it("detects mosh environment variables", () => {
+    expect(isLikelyMoshSession({ MOSH_IP: "1" })).toBe(true);
+    expect(isLikelyMoshSession({ MOSH_KEY: "1" })).toBe(true);
+    expect(isLikelyMoshSession({ MOSH_PREDICTION_DISPLAY: "always" })).toBe(true);
+    expect(isLikelyMoshSession({})).toBe(false);
+  });
+});
 
 describe("resolveClipboardTargets", () => {
   it("prefers pbcopy on macOS and keeps OSC52 as fallback", () => {
@@ -21,6 +31,19 @@ describe("resolveClipboardTargets", () => {
       {
         platform: "linux",
         env: { SSH_CONNECTION: "1" },
+        isTTY: true,
+      },
+      () => true,
+    );
+
+    expect(targets.map((target) => target.method)).toEqual(["osc52"]);
+  });
+
+  it("treats mosh sessions as remote and prefers OSC52", () => {
+    const targets = resolveClipboardTargets(
+      {
+        platform: "linux",
+        env: { MOSH_IP: "1" },
         isTTY: true,
       },
       () => true,
@@ -91,6 +114,25 @@ describe("tryCopyToClipboard", () => {
     expect(result).toEqual({ ok: true, method: "osc52" });
     expect(writes).toHaveLength(1);
     expect(writes[0]).toBe(buildOsc52Sequence("https://example.com", {}));
+  });
+
+  it("returns a caution warning for OSC52 in mosh sessions", () => {
+    const writes: string[] = [];
+
+    const result = tryCopyToClipboard("https://example.com", {
+      platform: "linux",
+      env: { MOSH_IP: "1" },
+      isTTY: true,
+      commandExistsImpl: () => false,
+      writeStdoutImpl: (chunk) => {
+        writes.push(chunk);
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.method).toBe("osc52");
+    expect(result.warning).toContain("Mosh session detected");
+    expect(writes).toHaveLength(1);
   });
 });
 

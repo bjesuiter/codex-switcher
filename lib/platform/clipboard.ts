@@ -34,6 +34,7 @@ export type ClipboardCopyResult = {
   ok: boolean;
   method: ClipboardMethod;
   error?: string;
+  warning?: string;
 };
 
 type CommandExistsFn = (command: string, platform: NodeJS.Platform) => boolean;
@@ -58,6 +59,10 @@ const isCommandAvailable = (
   return result.exitCode === 0;
 };
 
+export const isLikelyMoshSession = (
+  env: NodeJS.ProcessEnv = process.env,
+): boolean => Boolean(env.MOSH_IP || env.MOSH_KEY || env.MOSH_PREDICTION_DISPLAY);
+
 export const isLikelyRemoteSession = (
   env: NodeJS.ProcessEnv = process.env,
 ): boolean => {
@@ -65,11 +70,7 @@ export const isLikelyRemoteSession = (
     return true;
   }
 
-  if (env.MOSH_IP || env.MOSH_KEY || env.MOSH_PREDICTION_DISPLAY) {
-    return true;
-  }
-
-  return false;
+  return isLikelyMoshSession(env);
 };
 
 const hasDisplayServer = (
@@ -269,8 +270,19 @@ export const tryCopyToClipboard = (
 
   for (const target of targets) {
     if (target.kind === "osc52") {
+      const env = options.env ?? process.env;
       try {
-        writeStdout(buildOsc52Sequence(text, options.env ?? process.env));
+        writeStdout(buildOsc52Sequence(text, env));
+
+        if (isLikelyMoshSession(env)) {
+          return {
+            ok: true,
+            method: "osc52",
+            warning:
+              "Mosh session detected: OSC52 clipboard updates may not work reliably. If clipboard did not update, copy the URL manually from above.",
+          };
+        }
+
         return { ok: true, method: "osc52" };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

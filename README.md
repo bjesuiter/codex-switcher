@@ -177,7 +177,7 @@ cdx migrate-secrets
 | `cdx --version` | Show version |
 | `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
 
-> Tip: On SSH/VPS, prefer `cdx login` (without `--device-flow`) and complete login via manual callback URL/code copy-paste. The manual flow can offer clipboard copy assist (including OSC52 on compatible terminals) to avoid selecting long URLs. Device flow can be blocked by Cloudflare challenge pages.
+> Tip: On SSH/VPS, prefer `cdx login` (without `--device-flow`) and complete login via manual callback URL/code copy-paste. The manual flow can offer clipboard copy assist (including OSC52 on compatible terminals) to avoid selecting long URLs. In Mosh sessions, OSC52 clipboard updates may be unreliable; if needed, use the printed fallback copy command or manual copy. Device flow can be blocked by Cloudflare challenge pages.
 
 ### Shell completion
 
