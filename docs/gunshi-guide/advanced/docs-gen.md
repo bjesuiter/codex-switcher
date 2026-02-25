@@ -1,0 +1,704 @@
+[Skip to content](https://gunshi.dev/guide/advanced/docs-gen#VPContent)
+[![](https://gunshi.dev/symbol.png)Gunshi](https://gunshi.dev/)
+Search
+Main Navigation [Home](https://gunshi.dev/)[Guide](https://gunshi.dev/guide/introduction/what-is-gunshi)[API](https://gunshi.dev/api)[Showcase](https://gunshi.dev/showcase)
+v0.29.2
+[v0.27 Release Notes](https://gunshi.dev/release/v0.27)
+[Changelog](https://github.com/kazupon/gunshi/blob/main/CHANGELOG.md)
+[Contributing](https://github.com/kazupon/gunshi/blob/main/CONTRIBUTING.md)
+[GitHub](https://github.com/kazupon/gunshi)
+[](https://github.com/kazupon/gunshi)
+Appearance
+[](https://github.com/kazupon/gunshi)
+Menu
+On this page
+Sidebar Navigation 
+## Introduction
+[What's Gunshi? ](https://gunshi.dev/guide/introduction/what-is-gunshi)
+[Setup ](https://gunshi.dev/guide/introduction/setup)
+## Essentials
+[Getting Started ](https://gunshi.dev/guide/essentials/getting-started)
+[Declarative Configuration ](https://gunshi.dev/guide/essentials/declarative)
+[Type Safe ](https://gunshi.dev/guide/essentials/type-safe)
+[Composable ](https://gunshi.dev/guide/essentials/composable)
+[Lazy & Async ](https://gunshi.dev/guide/essentials/lazy-async)
+[Auto Usage Generation ](https://gunshi.dev/guide/essentials/auto-usage)
+[Plugin System ](https://gunshi.dev/guide/essentials/plugin-system)
+## Advanced
+[Type System ](https://gunshi.dev/guide/advanced/type-system)
+[Command Hooks ](https://gunshi.dev/guide/advanced/command-hooks)
+[Context Extensions ](https://gunshi.dev/guide/advanced/context-extensions)
+[Custom Rendering ](https://gunshi.dev/guide/advanced/custom-rendering)
+[Internationalization ](https://gunshi.dev/guide/advanced/internationalization)
+[Documentation Generation ](https://gunshi.dev/guide/advanced/docs-gen)
+[Advanced Lazy Loading and Sub-Commands ](https://gunshi.dev/guide/advanced/advanced-lazy-loading)
+[Nested Sub-Commands ](https://gunshi.dev/guide/advanced/nested-sub-commands)
+## Experimentals
+[Parser Combinators ](https://gunshi.dev/guide/experimentals/parser-combinators)
+## Plugin
+[Plugin System Introduction ](https://gunshi.dev/guide/plugin/introduction)
+[Getting Started with Plugin Development ](https://gunshi.dev/guide/plugin/getting-started)
+[Plugin Lifecycle ](https://gunshi.dev/guide/plugin/lifecycle)
+[Plugin Dependencies ](https://gunshi.dev/guide/plugin/dependencies)
+[Plugin Decorators ](https://gunshi.dev/guide/plugin/decorators)
+[Plugin Extensions ](https://gunshi.dev/guide/plugin/extensions)
+[Plugin Type System ](https://gunshi.dev/guide/plugin/type-system)
+[Plugin Testing ](https://gunshi.dev/guide/plugin/testing)
+[Plugin Development Guidelines ](https://gunshi.dev/guide/plugin/guidelines)
+[Plugin List ](https://gunshi.dev/guide/plugin/list)
+## API References
+### [combinators ](https://gunshi.dev/api/combinators/)
+#### Functions
+[args ](https://gunshi.dev/api/combinators/functions/args)
+[boolean ](https://gunshi.dev/api/combinators/functions/boolean)
+[choice ](https://gunshi.dev/api/combinators/functions/choice)
+[combinator ](https://gunshi.dev/api/combinators/functions/combinator)
+[describe ](https://gunshi.dev/api/combinators/functions/describe)
+[extend ](https://gunshi.dev/api/combinators/functions/extend)
+[float ](https://gunshi.dev/api/combinators/functions/float)
+[integer ](https://gunshi.dev/api/combinators/functions/integer)
+[map ](https://gunshi.dev/api/combinators/functions/map)
+[merge ](https://gunshi.dev/api/combinators/functions/merge)
+[multiple ](https://gunshi.dev/api/combinators/functions/multiple)
+[number ](https://gunshi.dev/api/combinators/functions/number)
+[positional ](https://gunshi.dev/api/combinators/functions/positional)
+[required ](https://gunshi.dev/api/combinators/functions/required)
+[short ](https://gunshi.dev/api/combinators/functions/short)
+[string ](https://gunshi.dev/api/combinators/functions/string)
+[unrequired ](https://gunshi.dev/api/combinators/functions/unrequired)
+[withDefault ](https://gunshi.dev/api/combinators/functions/withDefault)
+#### Interfaces
+[BaseOptions ](https://gunshi.dev/api/combinators/interfaces/BaseOptions)
+[BooleanOptions ](https://gunshi.dev/api/combinators/interfaces/BooleanOptions)
+[CombinatorOptions ](https://gunshi.dev/api/combinators/interfaces/CombinatorOptions)
+[FloatOptions ](https://gunshi.dev/api/combinators/interfaces/FloatOptions)
+[IntegerOptions ](https://gunshi.dev/api/combinators/interfaces/IntegerOptions)
+[NumberOptions ](https://gunshi.dev/api/combinators/interfaces/NumberOptions)
+[StringOptions ](https://gunshi.dev/api/combinators/interfaces/StringOptions)
+#### Type Aliases
+[Combinator ](https://gunshi.dev/api/combinators/type-aliases/Combinator)
+[CombinatorSchema ](https://gunshi.dev/api/combinators/type-aliases/CombinatorSchema)
+### [context ](https://gunshi.dev/api/context/)
+#### Functions
+[createCommandContext ](https://gunshi.dev/api/context/functions/createCommandContext)
+#### Interfaces
+[CommandContextParams ](https://gunshi.dev/api/context/interfaces/CommandContextParams)
+### [default ](https://gunshi.dev/api/default/)
+#### Variables
+[ANONYMOUS_COMMAND_NAME ](https://gunshi.dev/api/default/variables/ANONYMOUS_COMMAND_NAME)
+#### Functions
+[cli ](https://gunshi.dev/api/default/functions/cli)
+[parseArgs ](https://gunshi.dev/api/default/functions/parseArgs)
+[plugin ](https://gunshi.dev/api/default/functions/plugin)
+[resolveArgs ](https://gunshi.dev/api/default/functions/resolveArgs)
+#### Classes
+[DefaultTranslation ](https://gunshi.dev/api/default/classes/DefaultTranslation)
+#### Interfaces
+[Args ](https://gunshi.dev/api/default/interfaces/Args)
+[ArgSchema ](https://gunshi.dev/api/default/interfaces/ArgSchema)
+[ArgToken ](https://gunshi.dev/api/default/interfaces/ArgToken)
+[CliOptions ](https://gunshi.dev/api/default/interfaces/CliOptions)
+[Command ](https://gunshi.dev/api/default/interfaces/Command)
+[CommandContext ](https://gunshi.dev/api/default/interfaces/CommandContext)
+[CommandContextExtension ](https://gunshi.dev/api/default/interfaces/CommandContextExtension)
+[CommandEnvironment ](https://gunshi.dev/api/default/interfaces/CommandEnvironment)
+[GunshiParams ](https://gunshi.dev/api/default/interfaces/GunshiParams)
+[PluginContext ](https://gunshi.dev/api/default/interfaces/PluginContext)
+[PluginDependency ](https://gunshi.dev/api/default/interfaces/PluginDependency)
+[PluginOptions ](https://gunshi.dev/api/default/interfaces/PluginOptions)
+[PluginWithExtension ](https://gunshi.dev/api/default/interfaces/PluginWithExtension)
+[PluginWithoutExtension ](https://gunshi.dev/api/default/interfaces/PluginWithoutExtension)
+[RenderingOptions ](https://gunshi.dev/api/default/interfaces/RenderingOptions)
+[SubCommandable ](https://gunshi.dev/api/default/interfaces/SubCommandable)
+#### Type Aliases
+[ArgValues ](https://gunshi.dev/api/default/type-aliases/ArgValues)
+[Awaitable ](https://gunshi.dev/api/default/type-aliases/Awaitable)
+[Commandable ](https://gunshi.dev/api/default/type-aliases/Commandable)
+[CommandCallMode ](https://gunshi.dev/api/default/type-aliases/CommandCallMode)
+[CommandContextCore ](https://gunshi.dev/api/default/type-aliases/CommandContextCore)
+[CommandDecorator ](https://gunshi.dev/api/default/type-aliases/CommandDecorator)
+[CommandExamplesFetcher ](https://gunshi.dev/api/default/type-aliases/CommandExamplesFetcher)
+[CommandLoader ](https://gunshi.dev/api/default/type-aliases/CommandLoader)
+[CommandRunner ](https://gunshi.dev/api/default/type-aliases/CommandRunner)
+[DefaultGunshiParams ](https://gunshi.dev/api/default/type-aliases/DefaultGunshiParams)
+[ExtendContext ](https://gunshi.dev/api/default/type-aliases/ExtendContext)
+[GunshiParamsConstraint ](https://gunshi.dev/api/default/type-aliases/GunshiParamsConstraint)
+[LazyCommand ](https://gunshi.dev/api/default/type-aliases/LazyCommand)
+[OnPluginExtension ](https://gunshi.dev/api/default/type-aliases/OnPluginExtension)
+[Plugin ](https://gunshi.dev/api/default/type-aliases/Plugin)
+[PluginExtension ](https://gunshi.dev/api/default/type-aliases/PluginExtension)
+[PluginFunction ](https://gunshi.dev/api/default/type-aliases/PluginFunction)
+[Prettify ](https://gunshi.dev/api/default/type-aliases/Prettify)
+[RendererDecorator ](https://gunshi.dev/api/default/type-aliases/RendererDecorator)
+[ValidationErrorsDecorator ](https://gunshi.dev/api/default/type-aliases/ValidationErrorsDecorator)
+### [definition ](https://gunshi.dev/api/definition/)
+#### Functions
+[define ](https://gunshi.dev/api/definition/functions/define)
+[defineWithTypes ](https://gunshi.dev/api/definition/functions/defineWithTypes)
+[lazy ](https://gunshi.dev/api/definition/functions/lazy)
+[lazyWithTypes ](https://gunshi.dev/api/definition/functions/lazyWithTypes)
+### [generator ](https://gunshi.dev/api/generator/)
+#### Functions
+[generate ](https://gunshi.dev/api/generator/functions/generate)
+#### Type Aliases
+[GenerateOptions ](https://gunshi.dev/api/generator/type-aliases/GenerateOptions)
+### [plugin ](https://gunshi.dev/api/plugin/)
+#### Variables
+[CLI_OPTIONS_DEFAULT ](https://gunshi.dev/api/plugin/variables/CLI_OPTIONS_DEFAULT)
+### [renderer ](https://gunshi.dev/api/renderer/)
+#### Functions
+[renderHeader ](https://gunshi.dev/api/renderer/functions/renderHeader)
+[renderUsage ](https://gunshi.dev/api/renderer/functions/renderUsage)
+[renderValidationErrors ](https://gunshi.dev/api/renderer/functions/renderValidationErrors)
+## Extra Topics
+[Showcase ](https://gunshi.dev/showcase)
+## Release Notes
+[Gunshi v0.27 Release Notes ](https://gunshi.dev/release/v0.27)
+On this page
+  * [Using the generate Function](https://gunshi.dev/guide/advanced/docs-gen#using-the-generate-function "Using the generate Function")
+  * [Generating Documentation for Multiple Commands](https://gunshi.dev/guide/advanced/docs-gen#generating-documentation-for-multiple-commands "Generating Documentation for Multiple Commands")
+  * [Creating Rich Documentation](https://gunshi.dev/guide/advanced/docs-gen#creating-rich-documentation "Creating Rich Documentation")
+  * [Automating Documentation Generation](https://gunshi.dev/guide/advanced/docs-gen#automating-documentation-generation "Automating Documentation Generation")
+  * [Generating Unix Man Pages](https://gunshi.dev/guide/advanced/docs-gen#generating-unix-man-pages "Generating Unix Man Pages")
+  * [Documentation Generation Guidelines](https://gunshi.dev/guide/advanced/docs-gen#documentation-generation-guidelines "Documentation Generation Guidelines")
+
+
+Are you an LLM? You can read better optimized documentation at /guide/advanced/docs-gen.md for this page in Markdown format
+# Documentation Generation [​](https://gunshi.dev/guide/advanced/docs-gen#documentation-generation)
+Gunshi provides a powerful feature for automatically generating documentation for your CLI applications.
+This guide explains how to use the `generate` function to generate documentation programmatically.
+## Using the `generate` Function [​](https://gunshi.dev/guide/advanced/docs-gen#using-the-generate-function)
+The following example demonstrates how to use the `generate` function to programmatically capture usage information for a command and save it to a documentation file:
+cli.ts
+ts```
+import { define } from 'gunshi'
+import { generate } from 'gunshi/generator'
+import { promises as fs } from 'node:fs'
+
+import type { Command } from 'gunshi'
+
+// Define your command
+const command = define({
+  name: 'my-command',
+  description: 'A sample command',
+  args: {
+    input: {
+      type: 'string',
+      short: 'i',
+      description: 'Input file'
+    },
+    output: {
+      type: 'string',
+      short: 'o',
+      description: 'Output file'
+    }
+  }
+  // ... and define `run`
+})
+
+// Generate documentation
+async function main() {
+  // Generate the usage information
+  const usageText: string = await generate(null, command, {
+    name: 'my-cli',
+    version: '1.0.0',
+    description: 'My CLI tool'
+  })
+
+  // Now you can use the usage text to generate documentation
+  await fs.writeFile('docs/cli-usage.md', `# CLI Usage\n\n\`\`\`sh\n${usageText}\n\`\`\``, 'utf8')
+
+  console.log('Documentation generated successfully!')
+}
+
+// Generate!
+await main()
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/docs-gen/basic).
+The `generate` function programmatically captures usage information for your CLI commands and returns it as a string.
+This allows you to generate documentation files, create API documentation, or integrate usage information into your build process.
+Unlike the `cli` function which executes commands and prints output to the console, `generate` is designed specifically for documentation generation:
+  * **Silent Mode** : Internally sets `usageSilent: true` to capture output as a string rather than printing to console. When this flag is set, the internal `ctx.log` function is replaced with a no-op function, preventing console output while still returning the generated usage text
+  * **No Execution** : Only generates usage text without running command logic
+  * **Return Value** : Returns the generated usage text as a string (or empty string if generation fails)
+
+
+The `generate` function takes three parameters:
+  * `command` (string | null): The sub-command name to generate documentation for. Pass `null` when generating documentation for the entry command or when you don't have sub-commands
+  * `entry` (Command | LazyCommand): The command object containing the command definition, or a lazy command that will be loaded to get the command
+  * `opts` (CliOptions): Optional configuration including: 
+    * `name`: The CLI program name
+    * `version`: Version string to display
+    * `description`: Program description
+    * `subCommands`: Map of sub-commands (if applicable)
+    * `renderHeader`, `renderUsage`: Custom renderer functions
+    * **Note** : The `usageSilent` option is automatically set to `true` internally, so any value you provide will be overridden
+
+
+Returns a Promise that resolves to the generated usage text as a string.
+If no usage is generated (e.g., when renderUsage is not defined), returns an empty string.
+## Generating Documentation for Multiple Commands [​](https://gunshi.dev/guide/advanced/docs-gen#generating-documentation-for-multiple-commands)
+When your CLI has sub-commands, you can iterate through them to generate comprehensive documentation.
+Here's how to generate documentation for each command separately:
+cli.ts
+ts```
+import { define } from 'gunshi'
+import { generate } from 'gunshi/generator'
+import { promises as fs } from 'node:fs'
+
+import type { Command, CliOptions } from 'gunshi'
+
+// Define your commands
+const createCommand = define({
+  name: 'create',
+  description: 'Create a new resource',
+  args: {
+    name: {
+      type: 'string',
+      short: 'n',
+      required: true,
+      description: 'Name of the resource'
+    }
+  }
+  // ... and define `run`
+})
+
+const listCommand = define({
+  name: 'list',
+  description: 'List all resources',
+  args: {
+    format: {
+      type: 'string',
+      short: 'f',
+      description: 'Output format (json, table)'
+    }
+  }
+  // ... and define `run`
+})
+
+// Create a Map of sub-commands
+const subCommands = {
+  create: createCommand,
+  list: listCommand
+}
+
+// Define the main command
+const mainCommand = define({
+  name: 'manage',
+  description: 'Manage resources'
+  // ... and define `run`
+})
+
+// Generate documentation for all commands
+async function main() {
+  const cliOptions: CliOptions = {
+    name: 'my-cli',
+    version: '1.0.0',
+    description: 'My CLI tool',
+    subCommands
+  }
+
+  // Generate main help
+  const mainUsage = await generate(null, mainCommand, cliOptions)
+  await fs.writeFile('docs/cli-main.md', `# CLI Usage\n\n\`\`\`sh\n${mainUsage}\n\`\`\``, 'utf8')
+
+  // Generate help for each sub-command
+  for (const name of Object.keys(subCommands)) {
+    const commandUsage = await generate(name, mainCommand, cliOptions)
+    await fs.writeFile(
+      `docs/cli-${name}.md`,
+      `# ${name.charAt(0).toUpperCase() + name.slice(1)} Command\n\n\`\`\`sh\n${commandUsage}\n\`\`\``,
+      'utf8'
+    )
+  }
+
+  console.log('All documentation generated successfully!')
+}
+
+// Generate!
+await main()
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/docs-gen/sub-command).
+## Creating Rich Documentation [​](https://gunshi.dev/guide/advanced/docs-gen#creating-rich-documentation)
+You can combine the generated usage information with additional content to create rich documentation:
+ts```
+import { define } from 'gunshi'
+import { generate } from 'gunshi/generator'
+import { promises as fs } from 'node:fs'
+
+// Generate rich documentation
+async function main() {
+  const command = define({
+    name: 'data-processor',
+    description: 'Process data files',
+    args: {
+      input: {
+        type: 'string',
+        short: 'i',
+        required: true,
+        description: 'Input file path'
+      },
+      format: {
+        type: 'string',
+        short: 'f',
+        description: 'Output format (json, csv, xml)'
+      },
+      output: {
+        type: 'string',
+        short: 'o',
+        description: 'Output file path'
+      }
+    }
+    // ... and define `run`
+  })
+
+  // Generate the usage information
+  const usageText = await generate(null, command, {
+    name: 'data-processor',
+    version: '1.0.0',
+    description: 'A data processing utility'
+  })
+
+  // Create rich documentation
+  const documentation = `
+# Data Processor CLI
+
+A command-line utility for processing data files in various formats.
+
+## Installation
+
+\`\`\`sh
+npm install -g data-processor
+\`\`\`
+
+## Usage
+
+\`\`\`sh
+${usageText}
+\`\`\`
+
+## Examples
+
+### Convert a CSV file to JSON
+
+\`\`\`sh
+data-processor --input data.csv --format json --output data.json
+\`\`\`
+
+### Process a file and print to stdout
+
+\`\`\`sh
+data-processor --input data.csv
+\`\`\`
+
+## Advanced Usage
+
+For more complex scenarios, you can:
+
+1. Chain commands with pipes
+2. Use glob patterns for batch processing
+3. Configure processing with a config file
+
+## API Reference
+
+The CLI is built on top of the data-processor library, which you can also use programmatically.
+  `
+
+  await fs.writeFile('docs/data-processor.md', documentation, 'utf8')
+  console.log('Rich documentation generated successfully!')
+}
+
+// Generate!
+await main()
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/docs-gen/rich).
+## Automating Documentation Generation [​](https://gunshi.dev/guide/advanced/docs-gen#automating-documentation-generation)
+You can automate documentation generation as part of your build process:
+NOTE
+The following example uses Node.js-specific `__dirname` approach. For cross-runtime compatibility:
+  * **Deno** : Use `import.meta.dirname` or `fromFileUrl(import.meta.url)`
+  * **Bun** : Use `import.meta.dir` or Node.js-compatible approach
+
+
+scripts/generate-docs.ts
+ts```
+import { generate } from 'gunshi/generator'
+import { promises as fs } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+
+import type { Command, CliOptions } from 'gunshi'
+
+// Get the directory of the current module
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(__dirname, '..')
+const docsDir = path.join(rootDir, 'docs')
+
+// Import your commands
+import { mainCommand, subCommands } from '../src/commands.ts'
+
+async function main() {
+  const cliOptions: CliOptions = {
+    name: 'my-cli',
+    version: '1.0.0',
+    description: 'My CLI tool',
+    subCommands
+  }
+
+  // Generate main help
+  const mainUsage = await generate(null, mainCommand, cliOptions)
+
+  // Create the CLI reference page
+  const cliReference = `# CLI Reference
+
+## Main Command
+
+\`\`\`sh
+${mainUsage}
+\`\`\`
+
+## Sub-commands
+
+`
+
+  // Add each sub-command
+  let fullReference = cliReference
+  for (const name of Object.keys(subCommands)) {
+    const commandUsage = await generate(name, mainCommand, cliOptions)
+    fullReference += `### ${name.charAt(0).toUpperCase() + name.slice(1)}
+
+\`\`\`sh
+${commandUsage}
+\`\`\`
+
+`
+  }
+
+  // Write the documentation
+  await fs.writeFile(path.join(docsDir, 'cli-reference.md'), fullReference, 'utf8')
+  console.log('Documentation generated successfully!')
+}
+
+// Generate!
+await main()
+```
+
+Then add a script to your `package.json`:
+package.json
+json```
+{
+  "scripts": {
+    "docs:generate": "tsx scripts/generate-docs.ts",
+    "docs:build": "npm run docs:generate && vitepress build docs"
+  }
+}
+```
+
+## Generating Unix Man Pages [​](https://gunshi.dev/guide/advanced/docs-gen#generating-unix-man-pages)
+Unix man pages (short for "manual pages") are a traditional form of documentation for command-line tools on Unix-like operating systems.
+You can use Gunshi's `generate` function to generate man pages for your CLI applications.
+### Introduction to Man Pages [​](https://gunshi.dev/guide/advanced/docs-gen#introduction-to-man-pages)
+Man pages are the standard documentation format for Unix and Unix-like systems.
+They provide comprehensive documentation directly accessible from the command line using the `man` command.
+Man pages follow a specific structure with numbered sections (1 for user commands, 2 for system calls, etc.) and standardized formatting conventions.
+The most common format for man pages is roff (runoff), though modern tools allow you to write documentation in simpler formats like Markdown and convert them to roff.
+### Generating Man Pages with Gunshi [​](https://gunshi.dev/guide/advanced/docs-gen#generating-man-pages-with-gunshi)
+The following example demonstrates how to generate Unix man page documentation using Gunshi's `generate` function with a custom renderer.
+The custom renderer (`renderManPageUsage`) creates markdown output that can be converted to the man page format (roff) using tools like `marked-man`.
+The renderer function structures the output according to standard man page sections:
+  * **NAME** : Command name and brief description
+  * **SYNOPSIS** : Command syntax overview
+  * **DESCRIPTION** : Detailed command description
+  * **OPTIONS** : Available command-line options with descriptions
+  * **EXAMPLES** : Usage examples (references the command's help)
+  * **AUTHOR** : Author information
+  * **SEE ALSO** : Related documentation and resources
+
+
+This approach allows you to maintain man pages alongside your CLI code, ensuring they stay synchronized:
+cli.ts
+ts```
+import { define } from 'gunshi'
+import { generate } from 'gunshi/generator'
+import { execFileSync } from 'node:child_process'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
+
+import type { CommandContext } from 'gunshi'
+
+// Define custom usage renderer that outputs markdown convertible to man page format (roff) using marked-man
+function renderManPageUsage(ctx: CommandContext) {
+  const lines: string[] = []
+
+  // NAME
+  lines.push(`# ${ctx.name}(1) -- ${ctx.description || 'CLI tool'}`, '')
+
+  // SYNOPSIS
+  lines.push('## SYNOPSIS')
+  lines.push(`${ctx.env.name} <OPTIONS>`, '')
+
+  // DESCRIPTION
+  lines.push('## DESCRIPTION')
+  lines.push(ctx.description || '', '')
+
+  // OPTIONS
+  lines.push('## OPTIONS')
+  for (const [name, schema] of Object.entries(ctx.args)) {
+    const options = [`\`--${name}\``]
+    if (schema.short) {
+      options.unshift(`\`-${schema.short}\``)
+    }
+    let value = ''
+    if (schema.type !== 'boolean') {
+      value = schema.default ? `[${name}]` : `<${name}>`
+    }
+    lines.push(`- ${options.join(', ')}${value ? ` ${value}` : ''}`)
+    lines.push(`  ${schema.description || ''}`)
+    lines.push('')
+  }
+
+  // EXAMPLES
+  lines.push('## EXAMPLES')
+  lines.push('See command `--help` for examples', '')
+
+  // AUTHOR
+  lines.push('## AUTHOR')
+  lines.push('Created by yours', '')
+
+  // SEE ALSO
+  lines.push('## SEE ALSO')
+  lines.push('- man: `man my-tool`', '')
+  lines.push('- website: https://my-tools.com/references/cli', '')
+  lines.push('- repository: https://github.com/your-username/my-tool', '')
+
+  return Promise.resolve(lines.join('\n'))
+}
+
+async function main() {
+  const command = define({
+    name: 'my-tool',
+    description: 'A utility for processing data',
+    args: {
+      input: {
+        type: 'string',
+        short: 'i',
+        required: true,
+        description: 'Input file path'
+      },
+      output: {
+        type: 'string',
+        short: 'o',
+        description: 'Output file path (defaults to stdout)'
+      },
+      format: {
+        type: 'string',
+        short: 'f',
+        description: 'Output format (json, yaml, xml)'
+      },
+      verbose: {
+        type: 'boolean',
+        short: 'V',
+        description: 'Enable verbose output'
+      }
+    },
+    examples: `1. Process a file and output to stdout
+$ my-tool --input data.csv
+
+2. Process a file and save to a specific format
+$ my-tool --input data.csv --output result.yaml --format yaml
+
+3. Enable verbose output
+$ my-tool --input data.csv --verbose`
+    // ... and define `run`
+  })
+
+  // Generate the usage with custom renderer
+  const usageText = await generate(null, command, {
+    name: 'my-tool',
+    version: '1.0.0',
+    description: 'A utility for processing data',
+    renderHeader: null, // no display header on console
+    renderUsage: renderManPageUsage // set custom usage renderer
+  })
+
+  // Prerequisites: Install marked-man for converting markdown to man page format
+  // npm install -g marked-man
+  // or add it to your project: npm install --save-dev marked-man
+
+  // Write the markdown file
+  const mdFile = path.join(process.cwd(), 'my-tool.1.md')
+  await fs.writeFile(mdFile, usageText, 'utf8')
+
+  // Convert markdown to man page format using marked-man
+  try {
+    execFileSync('marked-man', ['--input', mdFile, '--output', 'my-tool.1'])
+    console.log('Man page generated successfully: my-tool.1')
+  } catch (error) {
+    console.error('Error generating man page:', (error as Error).message)
+    console.log('Make sure marked-man is installed: npm install -g marked-man')
+  }
+}
+
+// Generate!
+await main()
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/docs-gen/man)
+### Installing Man Pages [​](https://gunshi.dev/guide/advanced/docs-gen#installing-man-pages)
+Once you've generated a man page, you can install it on Unix-like systems:
+  1. **Local installation** (for development):
+sh```
+# Copy to your local man pages directory
+cp my-tool.1 ~/.local/share/man/man1/
+# Update the man database
+mandb
+```
+
+  2. **System-wide installation** (for packages):
+sh```
+# Copy to the system man pages directory (requires sudo)
+sudo cp my-tool.1 /usr/local/share/man/man1/
+# Update the man database
+sudo mandb
+```
+
+  3. **Package installation** (for npm packages): Add this to your `package.json`:
+package.json
+json```
+{
+  "man": ["./man/my-tool.1"]
+}
+```
+
+
+
+### Viewing Man Pages [​](https://gunshi.dev/guide/advanced/docs-gen#viewing-man-pages)
+After installation, users can view your man page using:
+sh```
+man my-tool
+```
+
+With the man page generation complete, let's look at broader guidelines for maintaining and generating documentation effectively.
+## Documentation Generation Guidelines [​](https://gunshi.dev/guide/advanced/docs-gen#documentation-generation-guidelines)
+When working with Gunshi's documentation generation features, consider these important guidelines:
+### Keeping Documentation Current [​](https://gunshi.dev/guide/advanced/docs-gen#keeping-documentation-current)
+Automating documentation generation as part of your build process ensures that your documentation stays synchronized with your code. This approach prevents documentation drift and maintains consistency across your project.
+### Enhancing Generated Content [​](https://gunshi.dev/guide/advanced/docs-gen#enhancing-generated-content)
+The auto-generated usage information provides a solid foundation, but combining it with hand-written examples and detailed explanations creates more valuable documentation. Consider adding context-specific examples that demonstrate real-world use cases.
+### Leveraging Custom Renderers [​](https://gunshi.dev/guide/advanced/docs-gen#leveraging-custom-renderers)
+For projects requiring specific documentation formats or styling, custom renderers provide fine-grained control over the output. See [Custom Rendering](https://gunshi.dev/guide/advanced/custom-rendering) for implementation details.
+### Documentation Testing [​](https://gunshi.dev/guide/advanced/docs-gen#documentation-testing)
+Including documentation tests in your test suite verifies that the generated documentation accurately reflects your CLI's behavior. This practice helps catch discrepancies between implementation and documentation early in the development process.
+Last updated: 21.02.26, 15:06
+Pager
+[Previous pageInternationalization](https://gunshi.dev/guide/advanced/internationalization)
+[Next pageAdvanced Lazy Loading and Sub-Commands](https://gunshi.dev/guide/advanced/advanced-lazy-loading)
+Released under the MIT License.
+Copyright © 2025 kazuya kawaguchi.

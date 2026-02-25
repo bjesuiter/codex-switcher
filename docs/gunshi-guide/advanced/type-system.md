@@ -1,0 +1,669 @@
+[Skip to content](https://gunshi.dev/guide/advanced/type-system#VPContent)
+[![](https://gunshi.dev/symbol.png)Gunshi](https://gunshi.dev/)
+Search
+Main Navigation [Home](https://gunshi.dev/)[Guide](https://gunshi.dev/guide/introduction/what-is-gunshi)[API](https://gunshi.dev/api)[Showcase](https://gunshi.dev/showcase)
+v0.29.2
+[v0.27 Release Notes](https://gunshi.dev/release/v0.27)
+[Changelog](https://github.com/kazupon/gunshi/blob/main/CHANGELOG.md)
+[Contributing](https://github.com/kazupon/gunshi/blob/main/CONTRIBUTING.md)
+[GitHub](https://github.com/kazupon/gunshi)
+[](https://github.com/kazupon/gunshi)
+Appearance
+[](https://github.com/kazupon/gunshi)
+Menu
+On this page
+Sidebar Navigation 
+## Introduction
+[What's Gunshi? ](https://gunshi.dev/guide/introduction/what-is-gunshi)
+[Setup ](https://gunshi.dev/guide/introduction/setup)
+## Essentials
+[Getting Started ](https://gunshi.dev/guide/essentials/getting-started)
+[Declarative Configuration ](https://gunshi.dev/guide/essentials/declarative)
+[Type Safe ](https://gunshi.dev/guide/essentials/type-safe)
+[Composable ](https://gunshi.dev/guide/essentials/composable)
+[Lazy & Async ](https://gunshi.dev/guide/essentials/lazy-async)
+[Auto Usage Generation ](https://gunshi.dev/guide/essentials/auto-usage)
+[Plugin System ](https://gunshi.dev/guide/essentials/plugin-system)
+## Advanced
+[Type System ](https://gunshi.dev/guide/advanced/type-system)
+[Command Hooks ](https://gunshi.dev/guide/advanced/command-hooks)
+[Context Extensions ](https://gunshi.dev/guide/advanced/context-extensions)
+[Custom Rendering ](https://gunshi.dev/guide/advanced/custom-rendering)
+[Internationalization ](https://gunshi.dev/guide/advanced/internationalization)
+[Documentation Generation ](https://gunshi.dev/guide/advanced/docs-gen)
+[Advanced Lazy Loading and Sub-Commands ](https://gunshi.dev/guide/advanced/advanced-lazy-loading)
+[Nested Sub-Commands ](https://gunshi.dev/guide/advanced/nested-sub-commands)
+## Experimentals
+[Parser Combinators ](https://gunshi.dev/guide/experimentals/parser-combinators)
+## Plugin
+[Plugin System Introduction ](https://gunshi.dev/guide/plugin/introduction)
+[Getting Started with Plugin Development ](https://gunshi.dev/guide/plugin/getting-started)
+[Plugin Lifecycle ](https://gunshi.dev/guide/plugin/lifecycle)
+[Plugin Dependencies ](https://gunshi.dev/guide/plugin/dependencies)
+[Plugin Decorators ](https://gunshi.dev/guide/plugin/decorators)
+[Plugin Extensions ](https://gunshi.dev/guide/plugin/extensions)
+[Plugin Type System ](https://gunshi.dev/guide/plugin/type-system)
+[Plugin Testing ](https://gunshi.dev/guide/plugin/testing)
+[Plugin Development Guidelines ](https://gunshi.dev/guide/plugin/guidelines)
+[Plugin List ](https://gunshi.dev/guide/plugin/list)
+## API References
+### [combinators ](https://gunshi.dev/api/combinators/)
+#### Functions
+[args ](https://gunshi.dev/api/combinators/functions/args)
+[boolean ](https://gunshi.dev/api/combinators/functions/boolean)
+[choice ](https://gunshi.dev/api/combinators/functions/choice)
+[combinator ](https://gunshi.dev/api/combinators/functions/combinator)
+[describe ](https://gunshi.dev/api/combinators/functions/describe)
+[extend ](https://gunshi.dev/api/combinators/functions/extend)
+[float ](https://gunshi.dev/api/combinators/functions/float)
+[integer ](https://gunshi.dev/api/combinators/functions/integer)
+[map ](https://gunshi.dev/api/combinators/functions/map)
+[merge ](https://gunshi.dev/api/combinators/functions/merge)
+[multiple ](https://gunshi.dev/api/combinators/functions/multiple)
+[number ](https://gunshi.dev/api/combinators/functions/number)
+[positional ](https://gunshi.dev/api/combinators/functions/positional)
+[required ](https://gunshi.dev/api/combinators/functions/required)
+[short ](https://gunshi.dev/api/combinators/functions/short)
+[string ](https://gunshi.dev/api/combinators/functions/string)
+[unrequired ](https://gunshi.dev/api/combinators/functions/unrequired)
+[withDefault ](https://gunshi.dev/api/combinators/functions/withDefault)
+#### Interfaces
+[BaseOptions ](https://gunshi.dev/api/combinators/interfaces/BaseOptions)
+[BooleanOptions ](https://gunshi.dev/api/combinators/interfaces/BooleanOptions)
+[CombinatorOptions ](https://gunshi.dev/api/combinators/interfaces/CombinatorOptions)
+[FloatOptions ](https://gunshi.dev/api/combinators/interfaces/FloatOptions)
+[IntegerOptions ](https://gunshi.dev/api/combinators/interfaces/IntegerOptions)
+[NumberOptions ](https://gunshi.dev/api/combinators/interfaces/NumberOptions)
+[StringOptions ](https://gunshi.dev/api/combinators/interfaces/StringOptions)
+#### Type Aliases
+[Combinator ](https://gunshi.dev/api/combinators/type-aliases/Combinator)
+[CombinatorSchema ](https://gunshi.dev/api/combinators/type-aliases/CombinatorSchema)
+### [context ](https://gunshi.dev/api/context/)
+#### Functions
+[createCommandContext ](https://gunshi.dev/api/context/functions/createCommandContext)
+#### Interfaces
+[CommandContextParams ](https://gunshi.dev/api/context/interfaces/CommandContextParams)
+### [default ](https://gunshi.dev/api/default/)
+#### Variables
+[ANONYMOUS_COMMAND_NAME ](https://gunshi.dev/api/default/variables/ANONYMOUS_COMMAND_NAME)
+#### Functions
+[cli ](https://gunshi.dev/api/default/functions/cli)
+[parseArgs ](https://gunshi.dev/api/default/functions/parseArgs)
+[plugin ](https://gunshi.dev/api/default/functions/plugin)
+[resolveArgs ](https://gunshi.dev/api/default/functions/resolveArgs)
+#### Classes
+[DefaultTranslation ](https://gunshi.dev/api/default/classes/DefaultTranslation)
+#### Interfaces
+[Args ](https://gunshi.dev/api/default/interfaces/Args)
+[ArgSchema ](https://gunshi.dev/api/default/interfaces/ArgSchema)
+[ArgToken ](https://gunshi.dev/api/default/interfaces/ArgToken)
+[CliOptions ](https://gunshi.dev/api/default/interfaces/CliOptions)
+[Command ](https://gunshi.dev/api/default/interfaces/Command)
+[CommandContext ](https://gunshi.dev/api/default/interfaces/CommandContext)
+[CommandContextExtension ](https://gunshi.dev/api/default/interfaces/CommandContextExtension)
+[CommandEnvironment ](https://gunshi.dev/api/default/interfaces/CommandEnvironment)
+[GunshiParams ](https://gunshi.dev/api/default/interfaces/GunshiParams)
+[PluginContext ](https://gunshi.dev/api/default/interfaces/PluginContext)
+[PluginDependency ](https://gunshi.dev/api/default/interfaces/PluginDependency)
+[PluginOptions ](https://gunshi.dev/api/default/interfaces/PluginOptions)
+[PluginWithExtension ](https://gunshi.dev/api/default/interfaces/PluginWithExtension)
+[PluginWithoutExtension ](https://gunshi.dev/api/default/interfaces/PluginWithoutExtension)
+[RenderingOptions ](https://gunshi.dev/api/default/interfaces/RenderingOptions)
+[SubCommandable ](https://gunshi.dev/api/default/interfaces/SubCommandable)
+#### Type Aliases
+[ArgValues ](https://gunshi.dev/api/default/type-aliases/ArgValues)
+[Awaitable ](https://gunshi.dev/api/default/type-aliases/Awaitable)
+[Commandable ](https://gunshi.dev/api/default/type-aliases/Commandable)
+[CommandCallMode ](https://gunshi.dev/api/default/type-aliases/CommandCallMode)
+[CommandContextCore ](https://gunshi.dev/api/default/type-aliases/CommandContextCore)
+[CommandDecorator ](https://gunshi.dev/api/default/type-aliases/CommandDecorator)
+[CommandExamplesFetcher ](https://gunshi.dev/api/default/type-aliases/CommandExamplesFetcher)
+[CommandLoader ](https://gunshi.dev/api/default/type-aliases/CommandLoader)
+[CommandRunner ](https://gunshi.dev/api/default/type-aliases/CommandRunner)
+[DefaultGunshiParams ](https://gunshi.dev/api/default/type-aliases/DefaultGunshiParams)
+[ExtendContext ](https://gunshi.dev/api/default/type-aliases/ExtendContext)
+[GunshiParamsConstraint ](https://gunshi.dev/api/default/type-aliases/GunshiParamsConstraint)
+[LazyCommand ](https://gunshi.dev/api/default/type-aliases/LazyCommand)
+[OnPluginExtension ](https://gunshi.dev/api/default/type-aliases/OnPluginExtension)
+[Plugin ](https://gunshi.dev/api/default/type-aliases/Plugin)
+[PluginExtension ](https://gunshi.dev/api/default/type-aliases/PluginExtension)
+[PluginFunction ](https://gunshi.dev/api/default/type-aliases/PluginFunction)
+[Prettify ](https://gunshi.dev/api/default/type-aliases/Prettify)
+[RendererDecorator ](https://gunshi.dev/api/default/type-aliases/RendererDecorator)
+[ValidationErrorsDecorator ](https://gunshi.dev/api/default/type-aliases/ValidationErrorsDecorator)
+### [definition ](https://gunshi.dev/api/definition/)
+#### Functions
+[define ](https://gunshi.dev/api/definition/functions/define)
+[defineWithTypes ](https://gunshi.dev/api/definition/functions/defineWithTypes)
+[lazy ](https://gunshi.dev/api/definition/functions/lazy)
+[lazyWithTypes ](https://gunshi.dev/api/definition/functions/lazyWithTypes)
+### [generator ](https://gunshi.dev/api/generator/)
+#### Functions
+[generate ](https://gunshi.dev/api/generator/functions/generate)
+#### Type Aliases
+[GenerateOptions ](https://gunshi.dev/api/generator/type-aliases/GenerateOptions)
+### [plugin ](https://gunshi.dev/api/plugin/)
+#### Variables
+[CLI_OPTIONS_DEFAULT ](https://gunshi.dev/api/plugin/variables/CLI_OPTIONS_DEFAULT)
+### [renderer ](https://gunshi.dev/api/renderer/)
+#### Functions
+[renderHeader ](https://gunshi.dev/api/renderer/functions/renderHeader)
+[renderUsage ](https://gunshi.dev/api/renderer/functions/renderUsage)
+[renderValidationErrors ](https://gunshi.dev/api/renderer/functions/renderValidationErrors)
+## Extra Topics
+[Showcase ](https://gunshi.dev/showcase)
+## Release Notes
+[Gunshi v0.27 Release Notes ](https://gunshi.dev/release/v0.27)
+On this page
+  * [Overview of v0.27 Type System](https://gunshi.dev/guide/advanced/type-system#overview-of-v0-27-type-system "Overview of v0.27 Type System")
+  * [Understanding GunshiParams](https://gunshi.dev/guide/advanced/type-system#understanding-gunshiparams "Understanding GunshiParams")
+  * [Core Functions: define and lazy](https://gunshi.dev/guide/advanced/type-system#core-functions-define-and-lazy "Core Functions: define and lazy")
+  * [Plugin Extensions and Architectural Constraints](https://gunshi.dev/guide/advanced/type-system#plugin-extensions-and-architectural-constraints "Plugin Extensions and Architectural Constraints")
+  * [Functions for Plugin Extensions: defineWithTypes and lazyWithTypes](https://gunshi.dev/guide/advanced/type-system#functions-for-plugin-extensions-definewithtypes-and-lazywithtypes "Functions for Plugin Extensions: defineWithTypes and lazyWithTypes")
+  * [The cli Function Type Parameters](https://gunshi.dev/guide/advanced/type-system#the-cli-function-type-parameters "The cli Function Type Parameters")
+  * [Combining Multiple Plugin Types](https://gunshi.dev/guide/advanced/type-system#combining-multiple-plugin-types "Combining Multiple Plugin Types")
+  * [Choosing the Right Function](https://gunshi.dev/guide/advanced/type-system#choosing-the-right-function "Choosing the Right Function")
+
+
+Are you an LLM? You can read better optimized documentation at /guide/advanced/type-system.md for this page in Markdown format
+# Type System [​](https://gunshi.dev/guide/advanced/type-system#type-system)
+Gunshi v0.27 introduces a powerful type parameter system that provides comprehensive type safety across all core functions: `cli`, `define`, `lazy`, and `plugin`.
+This enhancement brings TypeScript's full type-checking capabilities to your CLI applications, ensuring compile-time safety for command arguments and plugin extensions.
+This guide focuses on type safety for command definitions and their arguments. If you're creating custom plugins and need to understand the `plugin` function's type system, refer to the [Plugin Type System](https://gunshi.dev/guide/plugin/type-system) guide.
+NOTE
+Some code examples in this guide include TypeScript file extensions (`.ts`) in `import`/`export` statements. If you use this pattern in your plugin, you'll need to enable `allowImportingTsExtensions` in your `tsconfig.json`.
+## Overview of v0.27 Type System [​](https://gunshi.dev/guide/advanced/type-system#overview-of-v0-27-type-system)
+The v0.27 release provides comprehensive type safety through:
+  * **Core Functions** : `define` and `lazy` provide excellent type inference for standard commands
+  * **Plugin Extension Support** : `defineWithTypes` and `lazyWithTypes` enable type declarations for plugin extensions
+  * **Unified Type System (GunshiParams)** : A coherent type system for arguments and extensions
+  * **CLI Entry Point Types** : Type parameters for the `cli` function's entry command
+  * **Enhanced TypeScript Inference** : Automatic type inference reduces boilerplate while maintaining safety
+
+
+## Understanding `GunshiParams` [​](https://gunshi.dev/guide/advanced/type-system#understanding-gunshiparams)
+`GunshiParams` is the core type that provides type safety for command arguments and plugin extensions. At its simplest, it ensures that your command context has properly typed `values` (from args) and `extensions` (from plugins).
+Before diving into the implementation details, let's start with a simple example that demonstrates how `GunshiParams` provides type safety for command arguments:
+ts```
+// Simple usage - just arguments
+type SimpleParams = GunshiParams<{
+  args: { port: { type: 'number' } }
+}>
+
+// With extensions from plugins
+type FullParams = GunshiParams<{
+  args: { port: { type: 'number' } }
+  extensions: { logger: Logger }
+}>
+```
+
+The actual type definition uses TypeScript's conditional types to provide flexibility:
+ts```
+export interface GunshiParams<
+  P extends {
+    args?: Args
+    extensions?: ExtendContext
+  } = {
+    args: Args
+    extensions: {}
+  }
+> {
+  /**
+   * Command argument definitions.
+   */
+  args: P extends { args: infer A extends Args } ? A : Args
+  /**
+   * Command context extensions.
+   */
+  extensions: P extends { extensions: infer E extends ExtendContext } ? E : {}
+}
+```
+
+## Core Functions: `define` and `lazy` [​](https://gunshi.dev/guide/advanced/type-system#core-functions-define-and-lazy)
+### The `define` Function [​](https://gunshi.dev/guide/advanced/type-system#the-define-function)
+The `define` function is the primary way to create commands in Gunshi. For most use cases, the basic usage with automatic type inference is sufficient. Advanced usage with type parameters is useful when you need explicit type control or are working with complex type definitions.
+#### Basic Usage [​](https://gunshi.dev/guide/advanced/type-system#basic-usage)
+When your command doesn't use plugin extensions, `define` provides excellent automatic type inference:
+ts```
+import { define } from 'gunshi'
+
+// Standard command definition with automatic type inference
+export const serverCommand = define({
+  name: 'server',
+  description: 'Start the development server',
+  args: {
+    port: { type: 'number', default: 3000 },
+    host: { type: 'string', default: 'localhost' },
+    verbose: { type: 'boolean', short: 'V' }
+  },
+  run: ctx => {
+    // ctx.values is automatically inferred as { port?: number; host?: string; verbose?: boolean }
+    const { port, host, verbose } = ctx.values
+
+    console.log(`Starting server on ${host}:${port}`)
+    if (verbose) {
+      console.log('Verbose mode enabled')
+    }
+  }
+})
+```
+
+The basic usage covers most scenarios where you're defining commands with inline arguments and don't need to share type definitions across multiple commands.
+#### Advanced Usage with Type Parameters [​](https://gunshi.dev/guide/advanced/type-system#advanced-usage-with-type-parameters)
+When you need explicit type control or are working with pre-defined argument configurations, `define` accepts `GunshiParams` compatible type parameter:
+commands/server.ts
+ts```
+import { define } from 'gunshi'
+
+// Define args separately
+export const serverArgs = {
+  port: { type: 'number', default: 3000 },
+  host: { type: 'string', default: 'localhost' }
+} as const
+
+export const serverCommand = define<{ args: typeof serverArgs }>({
+  name: 'server',
+  args: serverArgs,
+  run: ctx => {
+    // ctx.values is typed based on ServerParams
+    console.log(`Server: ${ctx.values.host}:${ctx.values.port}`)
+  }
+})
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/type-system/define).
+This advanced approach is particularly useful when you want to reuse argument definitions across multiple commands or need to export types for use in other modules.
+### The `lazy` Function [​](https://gunshi.dev/guide/advanced/type-system#the-lazy-function)
+The `lazy` function enables code-splitting while maintaining type safety. Like `define`, it works well with automatic type inference for most cases. Advanced usage provides explicit type control when needed.
+#### Basic Usage [​](https://gunshi.dev/guide/advanced/type-system#basic-usage-1)
+For commands without plugin extensions, `lazy` automatically infers types from your definition:
+js```
+import { lazy } from 'gunshi'
+
+// Lazy-loaded command with automatic type inference
+export const buildCommand = lazy(
+  async () => {
+    // Heavy dependencies can be loaded here when needed
+    const { build } = await import('./build.js')
+
+    return async ctx => {
+      // ctx.values is automatically inferred from args definition below
+      const { target, minify } = ctx.values
+
+      console.log(`Building for ${target}...`)
+      if (minify) {
+        console.log('Minification enabled')
+      }
+
+      return build({ target, minify })
+    }
+  },
+  {
+    name: 'build',
+    description: 'Build the project',
+    args: {
+      target: { type: 'string', required: true, choices: ['dev', 'prod'] },
+      minify: { type: 'boolean', default: false }
+    }
+  }
+)
+```
+
+This basic usage is ideal for most lazy-loaded commands where you want to defer loading dependencies until the command is actually executed.
+#### Advanced Usage with Pre-defined Arguments [​](https://gunshi.dev/guide/advanced/type-system#advanced-usage-with-pre-defined-arguments)
+When working with pre-defined argument configurations or when you need to explicitly type your command runner, you can structure your lazy command as follows:
+commands/build.ts
+ts```
+import { lazy } from 'gunshi'
+
+// Pre-defined arguments
+export const buildArgs = {
+  target: { type: 'enum', required: true, choices: ['dev', 'prod'] },
+  minify: { type: 'boolean', default: false }
+} as const
+
+// Create the lazy command with explicit typing
+export const buildCommand = lazy<{ args: typeof buildArgs }>(
+  async () => {
+    // Heavy dependencies can be loaded here when needed
+    const { bundle } = await import('./utils.ts')
+
+    return async ctx => {
+      // Inference of args values
+      const { target, minify } = ctx.values
+      // Implementation
+      return bundle({ target, minify })
+    }
+  },
+  {
+    name: 'build',
+    args: buildArgs
+  }
+)
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/type-system/lazy).
+## Plugin Extensions and Architectural Constraints [​](https://gunshi.dev/guide/advanced/type-system#plugin-extensions-and-architectural-constraints)
+### Understanding the Timing Constraint [​](https://gunshi.dev/guide/advanced/type-system#understanding-the-timing-constraint)
+Gunshi's architecture intentionally separates command definition from plugin installation:
+  1. **Command Definition Time** : When you call `define()` or `lazy()` in your code, plugins haven't been installed yet
+  2. **CLI Execution Time** : When `cli()` runs, plugins are installed and extensions become available
+  3. **The Gap** : Commands can't know what extensions will be available at definition time
+
+
+This architectural design enables flexible command configuration but creates a challenge: how can commands safely use plugin extensions that don't exist yet?
+### The Solution: Type Declaration Functions [​](https://gunshi.dev/guide/advanced/type-system#the-solution-type-declaration-functions)
+`defineWithTypes` and `lazyWithTypes` solve this by allowing you to declare expected extensions at command definition time. These functions provide type safety for plugin extensions that will be available when the command actually runs.
+This separation is crucial because:
+  * It maintains modularity - commands don't depend on specific plugin implementations
+  * It allows flexible plugin configuration - different CLI instances can use different plugins
+  * It enables type safety - TypeScript knows what extensions to expect even though they're not yet available
+
+
+## Functions for Plugin Extensions: `defineWithTypes` and `lazyWithTypes` [​](https://gunshi.dev/guide/advanced/type-system#functions-for-plugin-extensions-definewithtypes-and-lazywithtypes)
+When your command needs to use plugin extensions, use these specialized functions that allow you to declare expected extension types.
+### The `defineWithTypes` Function [​](https://gunshi.dev/guide/advanced/type-system#the-definewithtypes-function)
+Use `defineWithTypes` when your command needs plugin extensions. It uses a currying approach where you specify the extensions type, and args are automatically inferred:
+commands/server.ts
+ts```
+import { defineWithTypes } from 'gunshi'
+import type { AuthExtension } from '../plugin.ts'
+
+// Define your extensions type
+type ServerExtensions = {
+  auth: AuthExtension
+}
+
+// Use defineWithTypes - specify only extensions, args are inferred!
+export const serverCommand = defineWithTypes<{ extensions: ServerExtensions }>()({
+  name: 'server',
+  description: 'Start the development server',
+  args: {
+    port: { type: 'number', default: 3000 },
+    host: { type: 'string', default: 'localhost' },
+    verbose: { type: 'boolean', short: 'V' }
+  },
+  run: ctx => {
+    // ctx.values is automatically inferred as { port?: number; host?: string; verbose?: boolean }
+    const { port, host, verbose } = ctx.values
+
+    // ctx.extensions is typed as ServerExtensions
+    // Optional chaining (?.) is used because plugins may not be installed
+    if (!ctx.extensions.auth?.isAuthenticated()) {
+      throw new Error('Please login first')
+    }
+
+    const user = ctx.extensions.auth?.getUser()
+    console.log(`Server started by ${user.name} on ${host}:${port}`)
+
+    if (verbose) {
+      console.log('Verbose mode enabled')
+    }
+  }
+})
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/type-system/define-with-types).
+#### Flexible Type Parameters [​](https://gunshi.dev/guide/advanced/type-system#flexible-type-parameters)
+`defineWithTypes` supports multiple scenarios for different use cases:
+ts```
+// Case 1: Extensions only (most common)
+// You want to use plugin extensions in your CommandRunner implementation.
+// Args are automatically inferred from the inline definition
+const cmd1 = defineWithTypes<{ extensions: MyExtensions }>()({
+  name: 'server',
+  args: { port: { type: 'number' } }, // args types are inferred
+  run: ctx => {
+    // ctx.extensions is typed, ctx.values is inferred from args
+    /* ... */
+  }
+})
+
+// Case 2: Args only (when using pre-defined args)
+// Your args are defined in a variable, not inline in the define function.
+// Pre-defined args variables need explicit type specification for proper inference
+const myArgs = {
+  port: { type: 'number' },
+  host: { type: 'string' }
+} as const
+
+const cmd2 = defineWithTypes<{ args: typeof myArgs }>()({
+  name: 'process',
+  args: myArgs, // Using pre-defined args variable
+  run: ctx => {
+    // ctx.values is typed based on myArgs
+    /* ... */
+  }
+})
+
+// Case 3: Both args and extensions (special case)
+// You need plugin extensions AND you're using pre-defined args variables
+const cmd3 = defineWithTypes<{
+  args: typeof myArgs
+  extensions: MyExtensions
+}>()({
+  name: 'hybrid',
+  args: myArgs, // Using pre-defined args variable
+  run: ctx => {
+    // Both ctx.values and ctx.extensions are typed
+    /* ... */
+  }
+})
+```
+
+### The `lazyWithTypes` Function [​](https://gunshi.dev/guide/advanced/type-system#the-lazywithtypes-function)
+The `lazyWithTypes` function maintains type safety for lazy-loaded commands that use plugin extensions:
+commands/build.ts
+ts```
+import { lazyWithTypes } from 'gunshi'
+import type { LoggerExtension } from '../plugin.ts'
+
+export const buildArgs = {
+  target: { type: 'enum', required: true, choices: ['dev', 'prod'] },
+  minify: { type: 'boolean', default: false }
+} as const
+
+// Define extensions for the command
+type BuildExtensions = {
+  logger: LoggerExtension
+}
+
+// Use lazyWithTypes with extensions - args are automatically inferred
+export const buildCommand = lazyWithTypes<{
+  args: typeof buildArgs
+  extensions: BuildExtensions
+}>()(
+  async () => {
+    // Heavy dependencies can be loaded here when needed
+    return async ctx => {
+      // ctx.values is automatically inferred from args definition below
+      const { target, minify } = ctx.values
+
+      // Use typed extensions
+      ctx.extensions.logger?.log(`Building for ${target}...`)
+
+      if (minify) {
+        ctx.extensions.logger?.log('Minification enabled')
+      }
+    }
+  },
+  {
+    name: 'build',
+    description: 'Build the project',
+    args: buildArgs
+  }
+)
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/type-system/lazy-with-types).
+#### Flexible Type Parameters [​](https://gunshi.dev/guide/advanced/type-system#flexible-type-parameters-1)
+Similar to `defineWithTypes`, `lazyWithTypes` supports flexible type parameters:
+ts```
+// Most common: specify only extensions
+lazyWithTypes<{ extensions: BuildExtensions }>()( ... )
+
+// When using pre-defined args: specify args explicitly
+lazyWithTypes<{ args: typeof buildArgs }>()( ... )
+
+// Full control: specify both (when using pre-defined args AND extensions)
+lazyWithTypes<{ args: typeof buildArgs; extensions: BuildExtensions }>()( ... )
+```
+
+## The `cli` Function Type Parameters [​](https://gunshi.dev/guide/advanced/type-system#the-cli-function-type-parameters)
+The `cli` function provides type safety for your entry command. The type parameter defines the type for the entry command's context, determining the types of `ctx.values` and `ctx.extensions` that the entry command's runner function receives:
+ts```
+import { cli } from 'gunshi'
+import logger from './plugin.ts'
+
+import type { LoggerExtension } from './plugin.ts'
+
+const entryArgs = {
+  verbose: { type: 'boolean', short: 'V' },
+  output: { type: 'string', default: 'json' }
+} as const
+
+// `cli` function with type-safe `args` and `extensions`
+await cli<{ args: typeof entryArgs; extensions: { logger: LoggerExtension } }>(
+  process.argv.slice(2),
+  {
+    name: 'main',
+    description: 'CLI with type-safe extensions',
+    args: entryArgs,
+    run: async ctx => {
+      if (ctx.values.verbose) {
+        ctx.extensions.logger?.log(`Processing in verbose mode...`)
+      }
+      console.log(`Output format: ${ctx.values.output}`)
+    }
+  },
+  {
+    name: 'mycli',
+    version: '1.0.0',
+    plugins: [logger()]
+  }
+)
+```
+
+## Combining Multiple Plugin Types [​](https://gunshi.dev/guide/advanced/type-system#combining-multiple-plugin-types)
+When working with multiple plugins, you often need to combine their extension types to create a comprehensive type definition for your commands. TypeScript's intersection operator (`&`) provides a clean way to merge multiple plugin extension types.
+### Using TypeScript's Intersection Operator (&) [​](https://gunshi.dev/guide/advanced/type-system#using-typescript-s-intersection-operator)
+The `&` operator creates an intersection type that combines multiple type definitions. This is particularly useful when your command needs to access extensions from multiple plugins.
+#### With Official Gunshi Plugins [​](https://gunshi.dev/guide/advanced/type-system#with-official-gunshi-plugins)
+When using official Gunshi plugins that provide plugin IDs, combine their extensions using Record types. Let's break this down step by step:
+**Step 1: Import Plugin IDs and Types**
+First, import the plugin IDs and extension types from the official plugins. Each plugin provides a unique identifier and type definition:
+ts```
+// Import plugin identifiers
+import { pluginId as globalId } from '@gunshi/plugin-global'
+import { pluginId as rendererId } from '@gunshi/plugin-renderer'
+import { pluginId as i18nId } from '@gunshi/plugin-i18n'
+
+// Import type definitions
+import type { GlobalExtension, PluginId as GlobalId } from '@gunshi/plugin-global'
+import type { UsageRendererExtension, PluginId as RendererId } from '@gunshi/plugin-renderer'
+import type { I18nExtension, PluginId as I18nId } from '@gunshi/plugin-i18n'
+```
+
+**Step 2: Combine Extension Types**
+Next, create a combined type that includes all the plugin extensions your command will use. The Record types map each plugin ID to its corresponding extension:
+ts```
+// Combine multiple plugin extension types using intersection (&)
+type CombinedExtensions = Record<GlobalId, GlobalExtension> &
+  Record<RendererId, UsageRendererExtension> &
+  Record<I18nId, I18nExtension>
+```
+
+**Step 3: Define the Command with Combined Extensions**
+Finally, use `defineWithTypes` to create a command that can access all the combined plugin extensions with full type safety:
+ts```
+// Use defineWithTypes with combined extensions
+export default defineWithTypes<{ extensions: CombinedExtensions }>()({
+  name: 'greet',
+  args: {
+    name: { type: 'string', required: true }
+  },
+  run: async ctx => {
+    // Access i18n plugin extension
+    const locale = ctx.extensions[i18nId]?.locale
+    if (locale) {
+      console.log(`Current locale: ${locale.toString()}`)
+    }
+
+    // Access renderer plugin extension
+    const message = ctx.extensions[rendererId]?.text('welcome')
+    if (message) {
+      console.log(message)
+    }
+
+    // Access environment properties directly on context (not through extensions)
+    console.log(`Running in ${ctx.env.name || 'unknown'} environment`)
+  }
+})
+```
+
+#### With Custom Plugins [​](https://gunshi.dev/guide/advanced/type-system#with-custom-plugins)
+Custom plugins provide plugin IDs and types. Import both to create fully type-safe command definitions:
+commands/query.ts
+ts```
+import { defineWithTypes } from 'gunshi'
+import { pluginId as authId } from '../plugins/auth.ts'
+import { pluginId as databaseId } from '../plugins/database.ts'
+import { pluginId as loggerId } from '../plugins/logger.ts'
+
+import type { AuthExtension, PluginId as AuthId } from '../plugins/auth.ts'
+import type { DatabaseExtension, PluginId as DatabaseId } from '../plugins/database.ts'
+import type { LoggerExtension, PluginId as LoggerId } from '../plugins/logger.ts'
+
+type CombinedExtensions = Record<LoggerId, LoggerExtension> &
+  Record<AuthId, AuthExtension> &
+  Record<DatabaseId, DatabaseExtension>
+
+export default defineWithTypes<{ extensions: CombinedExtensions }>()({
+  name: 'query',
+  description: 'Query database tables',
+  args: {
+    table: { type: 'string', required: true }
+  },
+  run: async ctx => {
+    // All extensions and arguments are fully typed
+    ctx.extensions[loggerId]?.log(`Querying ${ctx.values.table}`)
+
+    // Check read permissions for the specific table
+    if (!ctx.extensions[authId]?.hasPermission('read', ctx.values.table)) {
+      throw new Error(`No read access to table: ${ctx.values.table}`)
+    }
+
+    // Perform the query using the database extension
+    const dataset = await ctx.extensions[databaseId]?.query(ctx.values.table)
+    console.log(`Retrieved records from ${ctx.values.table}`, dataset)
+  }
+})
+```
+
+TIP
+The example fully code is [here](https://github.com/kazupon/gunshi/tree/main/playground/advanced/type-system/combine).
+Both approaches achieve the same goal: combining multiple plugin extensions with full type safety. Use Record types when working with official plugins that provide plugin IDs, and direct intersection types for custom plugins.
+## Choosing the Right Function [​](https://gunshi.dev/guide/advanced/type-system#choosing-the-right-function)
+### Use `define` or `lazy` when: [​](https://gunshi.dev/guide/advanced/type-system#use-define-or-lazy-when)
+  * Your command doesn't use plugin extensions
+  * You only need type safety for command arguments
+  * This is the most common use case
+
+
+### Use `defineWithTypes` or `lazyWithTypes` when: [​](https://gunshi.dev/guide/advanced/type-system#use-definewithtypes-or-lazywithtypes-when)
+  * Your command uses plugin extensions
+  * You need to declare expected extension types
+  * You want IntelliSense for plugin APIs
+
+
+The choice is straightforward: if you need plugin extensions, use the `WithTypes` variants; otherwise, use the standard functions for simpler, cleaner code.
+Last updated: 21.02.26, 15:06
+Pager
+[Previous pagePlugin System](https://gunshi.dev/guide/essentials/plugin-system)
+[Next pageCommand Hooks](https://gunshi.dev/guide/advanced/command-hooks)
+Released under the MIT License.
+Copyright © 2025 kazuya kawaguchi.
