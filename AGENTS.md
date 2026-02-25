@@ -18,3 +18,4 @@
 4. Commit the changes
 5. Create a git tag with the version number (no prefix): `git tag X.Y.Z`
 6. Push both the commit and the tag: `git push && git push --tags`
+7. Watch the GitHub Actions release workflow triggered by the tag push and confirm success (use `gh`, e.g. `gh run list --workflow "Publish to npm" --limit 5` and `gh run watch <run-id> --exit-status`)
