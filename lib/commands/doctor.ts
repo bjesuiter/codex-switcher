@@ -87,7 +87,13 @@ type CommandCaptureResult = {
   error?: string;
 };
 
+type LinuxSecretStoreChecklistItemId =
+  | "gnome-keyring-installed"
+  | "secret-tool-installed"
+  | "gnome-keyring-running";
+
 type LinuxSecretStoreChecklistItem = {
+  id: LinuxSecretStoreChecklistItemId;
   question: string;
   ok: boolean;
   details?: string;
@@ -181,6 +187,254 @@ const checkGnomeKeyringRunning = async (): Promise<{
   };
 };
 
+type LinuxAutoStartStatus = {
+  state: "enabled" | "disabled" | "unknown";
+  details?: string;
+};
+
+const parseSystemctlEnabledState = (output: string): "enabled" | "disabled" | "unknown" => {
+  const normalized = output.trim().toLowerCase();
+
+  if (["enabled", "enabled-runtime", "static", "indirect", "generated"].includes(normalized)) {
+    return "enabled";
+  }
+
+  if (["disabled", "masked", "not-found", "linked", "linked-runtime"].includes(normalized)) {
+    return "disabled";
+  }
+
+  return "unknown";
+};
+
+const getLinuxGnomeKeyringAutoStartStatus = async (): Promise<LinuxAutoStartStatus> => {
+  if (!(await isCommandAvailable("systemctl"))) {
+    return {
+      state: "unknown",
+      details: "systemctl is not available; autostart detection depends on your desktop/session config.",
+    };
+  }
+
+  const units = ["gnome-keyring-daemon.socket", "gnome-keyring-daemon.service"];
+  let sawDisabled = false;
+  const details: string[] = [];
+
+  for (const unit of units) {
+    const result = await runCommandCapture("systemctl", ["--user", "is-enabled", unit]);
+    const state = parseSystemctlEnabledState(result.stdout || result.stderr);
+
+    if (state === "enabled") {
+      return { state: "enabled", details: `${unit} is enabled (${result.stdout || "enabled"}).` };
+    }
+
+    if (state === "disabled") {
+      sawDisabled = true;
+      details.push(`${unit}: ${result.stdout || result.stderr || "disabled"}`);
+      continue;
+    }
+
+    const maybeDetail = extractCommandFailureDetails(result);
+    if (maybeDetail) {
+      details.push(`${unit}: ${maybeDetail}`);
+    }
+  }
+
+  if (sawDisabled) {
+    return {
+      state: "disabled",
+      details: details.join("; "),
+    };
+  }
+
+  return {
+    state: "unknown",
+    details: details.join("; ") || "Unable to determine gnome-keyring autostart state.",
+  };
+};
+
+const applyKeyringEnvAssignments = (raw: string): void => {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*);?$/);
+    if (!match) {
+      continue;
+    }
+
+    const key = match[1];
+    const value = match[2].replace(/;$/, "");
+    if (key) {
+      process.env[key] = value;
+    }
+  }
+};
+
+const startGnomeKeyringNow = async (): Promise<{ ok: boolean; details?: string }> => {
+  const directStart = await runCommandCapture("gnome-keyring-daemon", [
+    "--start",
+    "--components=secrets",
+  ]);
+
+  if (directStart.ok) {
+    applyKeyringEnvAssignments(directStart.stdout);
+    const runningCheck = await checkGnomeKeyringRunning();
+    if (runningCheck.ok) {
+      return { ok: true };
+    }
+
+    return {
+      ok: false,
+      details: runningCheck.details ??
+        "gnome-keyring-daemon start command succeeded, but process was not detected afterwards.",
+    };
+  }
+
+  if (await isCommandAvailable("systemctl")) {
+    const serviceStart = await runCommandCapture("systemctl", [
+      "--user",
+      "start",
+      "gnome-keyring-daemon.service",
+    ]);
+
+    if (serviceStart.ok) {
+      const runningCheck = await checkGnomeKeyringRunning();
+      if (runningCheck.ok) {
+        return { ok: true };
+      }
+
+      return {
+        ok: false,
+        details: runningCheck.details ??
+          "systemctl start succeeded, but gnome-keyring-daemon was not detected afterwards.",
+      };
+    }
+
+    return {
+      ok: false,
+      details:
+        extractCommandFailureDetails(directStart) ??
+        extractCommandFailureDetails(serviceStart) ??
+        "Failed to start gnome-keyring-daemon.",
+    };
+  }
+
+  return {
+    ok: false,
+    details: extractCommandFailureDetails(directStart) ?? "Failed to start gnome-keyring-daemon.",
+  };
+};
+
+const enableGnomeKeyringAutoStart = async (): Promise<{ ok: boolean; details?: string }> => {
+  if (!(await isCommandAvailable("systemctl"))) {
+    return {
+      ok: false,
+      details:
+        "systemctl is not available, so cdx cannot automatically enable startup in this session manager.",
+    };
+  }
+
+  const units = ["gnome-keyring-daemon.socket", "gnome-keyring-daemon.service"];
+  const failures: string[] = [];
+
+  for (const unit of units) {
+    const result = await runCommandCapture("systemctl", [
+      "--user",
+      "enable",
+      unit,
+    ]);
+
+    if (result.ok) {
+      return { ok: true, details: `${unit} enabled.` };
+    }
+
+    const detail = extractCommandFailureDetails(result);
+    failures.push(`${unit}: ${detail ?? "enable failed"}`);
+  }
+
+  return {
+    ok: false,
+    details: failures.join("; "),
+  };
+};
+
+const maybeOfferToStartGnomeKeyring = async (): Promise<boolean> => {
+  const autoStartStatus = await getLinuxGnomeKeyringAutoStartStatus();
+
+  if (autoStartStatus.state === "enabled") {
+    const shouldStartNow = await p.confirm({
+      message:
+        "gnome-keyring autostart appears enabled, but it is not running right now. Start it now?",
+      initialValue: true,
+    });
+
+    if (p.isCancel(shouldStartNow) || !shouldStartNow) {
+      return false;
+    }
+
+    const startResult = await startGnomeKeyringNow();
+    if (!startResult.ok) {
+      process.stdout.write(
+        `      failed to start gnome-keyring-daemon: ${startResult.details ?? "unknown error"}\n`,
+      );
+      return false;
+    }
+
+    process.stdout.write("      started gnome-keyring-daemon for this session.\n");
+    return true;
+  }
+
+  if (autoStartStatus.details) {
+    process.stdout.write(`      autostart check: ${autoStartStatus.details}\n`);
+  }
+
+  const action = await p.select<"start-now" | "enable-and-start" | "skip">({
+    message:
+      autoStartStatus.state === "disabled"
+        ? "gnome-keyring autostart seems disabled. What should cdx do?"
+        : "Could not confirm gnome-keyring autostart. What should cdx do?",
+    options: [
+      { value: "start-now", label: "Start now only" },
+      {
+        value: "enable-and-start",
+        label: "Enable on system start and start now",
+      },
+      { value: "skip", label: "Skip" },
+    ],
+    initialValue: "start-now",
+  });
+
+  if (p.isCancel(action) || action === "skip") {
+    return false;
+  }
+
+  if (action === "enable-and-start") {
+    const enableResult = await enableGnomeKeyringAutoStart();
+    if (!enableResult.ok) {
+      process.stdout.write(
+        `      failed to enable autostart: ${enableResult.details ?? "unknown error"}\n`,
+      );
+      return false;
+    }
+
+    process.stdout.write(
+      `      autostart enabled${enableResult.details ? ` (${enableResult.details})` : ""}.\n`,
+    );
+  }
+
+  const startResult = await startGnomeKeyringNow();
+  if (!startResult.ok) {
+    process.stdout.write(
+      `      failed to start gnome-keyring-daemon: ${startResult.details ?? "unknown error"}\n`,
+    );
+    return false;
+  }
+
+  process.stdout.write("      started gnome-keyring-daemon for this session.\n");
+  return true;
+};
+
 const runLinuxSecretStoreChecklist = async (): Promise<
   LinuxSecretStoreChecklistItem[]
 > => {
@@ -190,18 +444,21 @@ const runLinuxSecretStoreChecklist = async (): Promise<
 
   return [
     {
+      id: "gnome-keyring-installed",
       question: "Is gnome-keyring installed?",
       ok: gnomeKeyringInstalled,
       hint:
         "Install the `gnome-keyring` package, then log out/in (or restart your session).",
     },
     {
+      id: "secret-tool-installed",
       question: "Is secret-tool installed?",
       ok: secretToolInstalled,
       hint:
         "Install the package that provides `secret-tool` (often `libsecret-tools`).",
     },
     {
+      id: "gnome-keyring-running",
       question: "Is gnome-keyring running?",
       ok: gnomeKeyringRunning.ok,
       details: gnomeKeyringRunning.details,
@@ -251,6 +508,21 @@ const maybeRunLinuxSecretStoreChecklist = async (): Promise<void> => {
 
     if (item.hint) {
       process.stdout.write(`      hint: ${item.hint}\n`);
+    }
+
+    if (item.id === "gnome-keyring-running") {
+      const started = await maybeOfferToStartGnomeKeyring();
+      if (started) {
+        const runningNow = await checkGnomeKeyringRunning();
+        if (runningNow.ok) {
+          passed += 1;
+          process.stdout.write("      re-check: gnome-keyring-daemon is now running.\n");
+        } else {
+          process.stdout.write(
+            `      re-check still failing: ${runningNow.details ?? "process not detected"}\n`,
+          );
+        }
+      }
     }
   }
 

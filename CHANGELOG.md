@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Improvements
+
+- After `cdx update-self` completes successfully, print the detected installed version directly instead of asking users to run `cdx version` manually.
+- When Linux secure-store doctor checks find `gnome-keyring-daemon` is not running, offer an interactive recovery flow to start it now, and (when detectable as disabled) optionally enable autostart and start it now.
+
 ## 1.8.2
 
 ### Features
