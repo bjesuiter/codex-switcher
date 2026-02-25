@@ -6,15 +6,12 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.7.3
+### 1.7.4
 
 #### Fixes
 
-- Add recovery for OAuth callback port conflicts (`127.0.0.1:1455`) during login/relogin:
-  - detect `EADDRINUSE` as a port-in-use condition
-  - prompt to kill the existing listener and retry, switch to device flow, or cancel
-  - show detected PID/command details when available before confirmation
-- Improve callback server startup diagnostics by exposing startup error reason/code details, making port/listen failures easier to troubleshoot.
+- Detect Cloudflare/bot-protection HTML challenge responses during OAuth device flow startup and token polling, and report an explicit `cloudflare_challenge` reason instead of only a generic HTTP 403.
+- When that challenge is detected, show a clear workaround: retry without `--device-flow` to use browser/manual callback flow.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 

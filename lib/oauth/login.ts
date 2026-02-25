@@ -368,6 +368,10 @@ const runDeviceOAuthFlow = async (
     if (deviceFlowResult.responseBody) {
       p.log.error(`Response: ${deviceFlowResult.responseBody}`);
     }
+    if (deviceFlowResult.failureReason === "cloudflare_challenge") {
+      p.log.warning("Detected Cloudflare challenge on auth.openai.com.");
+      p.log.info("Retry without --device-flow to use browser/manual callback flow.");
+    }
     return null;
   }
 
@@ -456,6 +460,10 @@ const runDeviceOAuthFlow = async (
       }
       if (pollResult.responseBody) {
         p.log.error(`Response: ${pollResult.responseBody}`);
+      }
+      if (pollResult.failureReason === "cloudflare_challenge") {
+        p.log.warning("Detected Cloudflare challenge on auth.openai.com.");
+        p.log.info("Retry without --device-flow to use browser/manual callback flow.");
       }
     }
 

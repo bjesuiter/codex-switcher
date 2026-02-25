@@ -42,6 +42,8 @@ export type DeviceAuthorizationFlow = {
   interval: number;
 };
 
+export type DeviceOAuthFailureReason = "cloudflare_challenge";
+
 export type DeviceAuthorizationFlowResult =
   | { type: "success"; flow: DeviceAuthorizationFlow }
   | {
@@ -50,6 +52,7 @@ export type DeviceAuthorizationFlowResult =
       status?: number;
       oauthError?: string;
       responseBody?: string;
+      failureReason?: DeviceOAuthFailureReason;
     };
 
 export type DeviceTokenResult =
@@ -64,6 +67,7 @@ export type DeviceTokenResult =
       status?: number;
       oauthError?: string;
       responseBody?: string;
+      failureReason?: DeviceOAuthFailureReason;
     };
 
 export const createState = (): string => {
@@ -97,6 +101,90 @@ const truncateForLog = (value: string, maxLength = 300): string => {
   return `${value.slice(0, maxLength)}…`;
 };
 
+const isCloudflareChallengeResponse = (
+  headers: Headers,
+  bodyText?: string,
+): boolean => {
+  const mitigated = headers.get("cf-mitigated")?.toLowerCase();
+  if (mitigated === "challenge") {
+    return true;
+  }
+
+  if (!bodyText) {
+    return false;
+  }
+
+  return [
+    /<title>Just a moment\.\.\.<\/title>/i,
+    /Enable JavaScript and cookies to continue/i,
+    /challenge-platform/i,
+    /_cf_chl_opt/i,
+  ].some((pattern) => pattern.test(bodyText));
+};
+
+const parseOAuthErrorResponse = async (
+  res: Response,
+): Promise<{
+  oauthError?: string;
+  interval?: number;
+  responseBody?: string;
+  failureReason?: DeviceOAuthFailureReason;
+}> => {
+  let rawBody: string | undefined;
+
+  try {
+    rawBody = await res.text();
+  } catch {
+    rawBody = undefined;
+  }
+
+  const failureReason = isCloudflareChallengeResponse(res.headers, rawBody)
+    ? "cloudflare_challenge"
+    : undefined;
+
+  if (!rawBody) {
+    return {
+      ...(failureReason ? { failureReason } : {}),
+    };
+  }
+
+  const trimmed = rawBody.trim();
+  if (!trimmed) {
+    return {
+      ...(failureReason ? { failureReason } : {}),
+    };
+  }
+
+  try {
+    const json = JSON.parse(trimmed) as {
+      error?: string;
+      interval?: number;
+      error_description?: string;
+    };
+
+    return {
+      ...(json.error ? { oauthError: json.error } : {}),
+      ...(typeof json.interval === "number" ? { interval: json.interval } : {}),
+      responseBody: truncateForLog(
+        JSON.stringify({
+          ...(json.error ? { error: json.error } : {}),
+          ...(json.error_description ? { error_description: json.error_description } : {}),
+          ...(typeof json.interval === "number" ? { interval: json.interval } : {}),
+        }),
+      ),
+      ...(failureReason ? { failureReason } : {}),
+    };
+  } catch {
+    return {
+      responseBody:
+        failureReason === "cloudflare_challenge"
+          ? "Cloudflare challenge response detected (HTML page)"
+          : truncateForLog(trimmed),
+      ...(failureReason ? { failureReason } : {}),
+    };
+  }
+};
+
 export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizationFlowResult> => {
   try {
     const res = await fetch(DEVICE_CODE_URL, {
@@ -109,32 +197,18 @@ export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizatio
     });
 
     if (!res.ok) {
-      let oauthError: string | undefined;
-      let responseBody: string | undefined;
-
-      try {
-        const json = (await res.json()) as { error?: string; error_description?: string };
-        oauthError = json.error;
-        responseBody = truncateForLog(
-          JSON.stringify({
-            ...(json.error ? { error: json.error } : {}),
-            ...(json.error_description ? { error_description: json.error_description } : {}),
-          }),
-        );
-      } catch {
-        try {
-          responseBody = truncateForLog(await res.text());
-        } catch {
-          responseBody = undefined;
-        }
-      }
+      const { oauthError, responseBody, failureReason } = await parseOAuthErrorResponse(res);
 
       return {
         type: "failed",
-        error: `Device code request failed with HTTP ${res.status} ${res.statusText}`,
+        error:
+          failureReason === "cloudflare_challenge"
+            ? "Device code request was blocked by a Cloudflare challenge response."
+            : `Device code request failed with HTTP ${res.status} ${res.statusText}`,
         status: res.status,
         ...(oauthError ? { oauthError } : {}),
         ...(responseBody ? { responseBody } : {}),
+        ...(failureReason ? { failureReason } : {}),
       };
     }
 
@@ -223,32 +297,12 @@ export const pollDeviceAuthorizationToken = async (
       };
     }
 
-    let errorCode: string | undefined;
-    let interval: number | undefined;
-    let responseBody: string | undefined;
-
-    try {
-      const json = (await res.json()) as {
-        error?: string;
-        interval?: number;
-        error_description?: string;
-      };
-      errorCode = json.error;
-      interval = json.interval;
-      responseBody = truncateForLog(
-        JSON.stringify({
-          ...(json.error ? { error: json.error } : {}),
-          ...(json.error_description ? { error_description: json.error_description } : {}),
-          ...(typeof json.interval === "number" ? { interval: json.interval } : {}),
-        }),
-      );
-    } catch {
-      try {
-        responseBody = truncateForLog(await res.text());
-      } catch {
-        responseBody = undefined;
-      }
-    }
+    const {
+      oauthError: errorCode,
+      interval,
+      responseBody,
+      failureReason,
+    } = await parseOAuthErrorResponse(res);
 
     if (errorCode === "authorization_pending") {
       return {
@@ -274,10 +328,14 @@ export const pollDeviceAuthorizationToken = async (
 
     return {
       type: "failed",
-      error: `Device token polling failed with HTTP ${res.status} ${res.statusText}`,
+      error:
+        failureReason === "cloudflare_challenge"
+          ? "Device token polling was blocked by a Cloudflare challenge response."
+          : `Device token polling failed with HTTP ${res.status} ${res.statusText}`,
       status: res.status,
       ...(errorCode ? { oauthError: errorCode } : {}),
       ...(responseBody ? { responseBody } : {}),
+      ...(failureReason ? { failureReason } : {}),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

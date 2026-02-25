@@ -79,6 +79,26 @@ describe("OAuth auth utilities", () => {
       }
     });
 
+    it("detects Cloudflare challenge responses on device-code endpoint", async () => {
+      globalThis.fetch = async () =>
+        new Response("<!DOCTYPE html><title>Just a moment...</title>", {
+          status: 403,
+          statusText: "Forbidden",
+          headers: {
+            "Content-Type": "text/html; charset=UTF-8",
+            "cf-mitigated": "challenge",
+          },
+        });
+
+      const result = await startDeviceAuthorizationFlow();
+      expect(result.type).toBe("failed");
+      if (result.type === "failed") {
+        expect(result.status).toBe(403);
+        expect(result.failureReason).toBe("cloudflare_challenge");
+        expect(result.error).toContain("Cloudflare challenge");
+      }
+    });
+
     it("returns detailed polling failures for unknown error responses", async () => {
       globalThis.fetch = async () =>
         new Response(
@@ -99,6 +119,23 @@ describe("OAuth auth utilities", () => {
         expect(result.status).toBe(401);
         expect(result.oauthError).toBe("invalid_client");
         expect(result.responseBody).toContain("client id rejected");
+      }
+    });
+
+    it("detects Cloudflare challenge responses while polling", async () => {
+      globalThis.fetch = async () =>
+        new Response("<html><body>Enable JavaScript and cookies to continue</body></html>", {
+          status: 403,
+          statusText: "Forbidden",
+          headers: { "Content-Type": "text/html; charset=UTF-8" },
+        });
+
+      const result = await pollDeviceAuthorizationToken("device-code-123");
+      expect(result.type).toBe("failed");
+      if (result.type === "failed") {
+        expect(result.status).toBe(403);
+        expect(result.failureReason).toBe("cloudflare_challenge");
+        expect(result.error).toContain("Cloudflare challenge");
       }
     });
   });

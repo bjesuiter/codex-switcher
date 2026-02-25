@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.7.4
+
+### Fixes
+
+- Detect Cloudflare/bot-protection HTML challenge responses during OAuth device flow startup and polling, and surface an explicit failure reason (`cloudflare_challenge`) instead of a generic HTTP 403.
+- Improve device-flow failure guidance by telling users to retry without `--device-flow` (browser/manual callback flow) when a challenge response is detected.
+
 ## 1.7.3
 
 ### Fixes
