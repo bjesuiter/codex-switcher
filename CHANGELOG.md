@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.7.2
+
+### Fixes
+
+- Improve device OAuth failure diagnostics during login/relogin. When device flow startup or polling fails, `cdx` now prints technical details (HTTP status, OAuth error code, and response/body snippets where available) instead of only showing a generic "not available right now" message.
+
 ## 1.7.1
 
 ### Features

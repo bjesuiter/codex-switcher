@@ -1,13 +1,20 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import {
   createAuthorizationFlow,
   createState,
   decodeJWT,
   extractAccountId,
+  pollDeviceAuthorizationToken,
+  startDeviceAuthorizationFlow,
 } from "./auth";
 import { AUTHORIZE_URL, CLIENT_ID, REDIRECT_URI, SCOPE } from "./constants";
 
+const originalFetch = globalThis.fetch;
+
 describe("OAuth auth utilities", () => {
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
   describe("createState", () => {
     it("generates a 32-character hex string", () => {
       const state = createState();
@@ -45,6 +52,54 @@ describe("OAuth auth utilities", () => {
       expect(url.searchParams.get("code_challenge")).toBe(flow.pkce.challenge);
       expect(url.searchParams.get("code_challenge_method")).toBe("S256");
       expect(url.searchParams.get("state")).toBe(flow.state);
+    });
+  });
+
+  describe("device OAuth helpers", () => {
+    it("returns detailed failure when device-code endpoint is unavailable", async () => {
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({
+            error: "unsupported_grant_type",
+            error_description: "device_code flow is disabled",
+          }),
+          {
+            status: 404,
+            statusText: "Not Found",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+      const result = await startDeviceAuthorizationFlow();
+      expect(result.type).toBe("failed");
+      if (result.type === "failed") {
+        expect(result.status).toBe(404);
+        expect(result.oauthError).toBe("unsupported_grant_type");
+        expect(result.responseBody).toContain("device_code flow is disabled");
+      }
+    });
+
+    it("returns detailed polling failures for unknown error responses", async () => {
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({
+            error: "invalid_client",
+            error_description: "client id rejected",
+          }),
+          {
+            status: 401,
+            statusText: "Unauthorized",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+      const result = await pollDeviceAuthorizationToken("device-code-123");
+      expect(result.type).toBe("failed");
+      if (result.type === "failed") {
+        expect(result.status).toBe(401);
+        expect(result.oauthError).toBe("invalid_client");
+        expect(result.responseBody).toContain("client id rejected");
+      }
     });
   });
 

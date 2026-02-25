@@ -180,11 +180,23 @@ const promptManualAuthorizationCode = async (
 const runDeviceOAuthFlow = async (
   useSpinner: boolean,
 ): Promise<SuccessfulTokenResult | null> => {
-  const deviceFlow = await startDeviceAuthorizationFlow();
-  if (!deviceFlow) {
+  const deviceFlowResult = await startDeviceAuthorizationFlow();
+  if (deviceFlowResult.type !== "success") {
     p.log.error("Device OAuth flow is not available right now.");
+    p.log.error(`Technical details: ${deviceFlowResult.error}`);
+    if (typeof deviceFlowResult.status === "number") {
+      p.log.error(`HTTP status: ${deviceFlowResult.status}`);
+    }
+    if (deviceFlowResult.oauthError) {
+      p.log.error(`OAuth error: ${deviceFlowResult.oauthError}`);
+    }
+    if (deviceFlowResult.responseBody) {
+      p.log.error(`Response: ${deviceFlowResult.responseBody}`);
+    }
     return null;
   }
+
+  const deviceFlow = deviceFlowResult.flow;
 
   p.log.info("Using device OAuth flow.");
   p.log.message(`Verification URL: ${deviceFlow.verificationUri}`);
@@ -256,6 +268,22 @@ const runDeviceOAuthFlow = async (
     } else {
       p.log.error("Device authorization failed.");
     }
+
+    if (pollResult.type === "failed") {
+      if (pollResult.error) {
+        p.log.error(`Technical details: ${pollResult.error}`);
+      }
+      if (typeof pollResult.status === "number") {
+        p.log.error(`HTTP status: ${pollResult.status}`);
+      }
+      if (pollResult.oauthError) {
+        p.log.error(`OAuth error: ${pollResult.oauthError}`);
+      }
+      if (pollResult.responseBody) {
+        p.log.error(`Response: ${pollResult.responseBody}`);
+      }
+    }
+
     return null;
   }
 

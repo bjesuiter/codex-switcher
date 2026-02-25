@@ -42,13 +42,29 @@ export type DeviceAuthorizationFlow = {
   interval: number;
 };
 
+export type DeviceAuthorizationFlowResult =
+  | { type: "success"; flow: DeviceAuthorizationFlow }
+  | {
+      type: "failed";
+      error: string;
+      status?: number;
+      oauthError?: string;
+      responseBody?: string;
+    };
+
 export type DeviceTokenResult =
   | TokenResult
   | { type: "pending"; interval: number }
   | { type: "slow_down"; interval: number }
   | { type: "access_denied" }
   | { type: "expired" }
-  | { type: "failed" };
+  | {
+      type: "failed";
+      error?: string;
+      status?: number;
+      oauthError?: string;
+      responseBody?: string;
+    };
 
 export const createState = (): string => {
   return randomBytes(16).toString("hex");
@@ -73,7 +89,15 @@ export const createAuthorizationFlow = async (): Promise<AuthorizationFlow> => {
   return { pkce, state, url: url.toString() };
 };
 
-export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizationFlow | null> => {
+const truncateForLog = (value: string, maxLength = 300): string => {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}…`;
+};
+
+export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizationFlowResult> => {
   try {
     const res = await fetch(DEVICE_CODE_URL, {
       method: "POST",
@@ -85,7 +109,33 @@ export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizatio
     });
 
     if (!res.ok) {
-      return null;
+      let oauthError: string | undefined;
+      let responseBody: string | undefined;
+
+      try {
+        const json = (await res.json()) as { error?: string; error_description?: string };
+        oauthError = json.error;
+        responseBody = truncateForLog(
+          JSON.stringify({
+            ...(json.error ? { error: json.error } : {}),
+            ...(json.error_description ? { error_description: json.error_description } : {}),
+          }),
+        );
+      } catch {
+        try {
+          responseBody = truncateForLog(await res.text());
+        } catch {
+          responseBody = undefined;
+        }
+      }
+
+      return {
+        type: "failed",
+        error: `Device code request failed with HTTP ${res.status} ${res.statusText}`,
+        status: res.status,
+        ...(oauthError ? { oauthError } : {}),
+        ...(responseBody ? { responseBody } : {}),
+      };
     }
 
     const json = (await res.json()) as {
@@ -103,19 +153,30 @@ export const startDeviceAuthorizationFlow = async (): Promise<DeviceAuthorizatio
       !json?.verification_uri ||
       typeof json?.expires_in !== "number"
     ) {
-      return null;
+      return {
+        type: "failed",
+        error: "Device code response is missing required fields.",
+        responseBody: truncateForLog(JSON.stringify(json)),
+      };
     }
 
     return {
-      deviceCode: json.device_code,
-      userCode: json.user_code,
-      verificationUri: json.verification_uri,
-      verificationUriComplete: json.verification_uri_complete,
-      expiresIn: json.expires_in,
-      interval: typeof json.interval === "number" && json.interval > 0 ? json.interval : 5,
+      type: "success",
+      flow: {
+        deviceCode: json.device_code,
+        userCode: json.user_code,
+        verificationUri: json.verification_uri,
+        verificationUriComplete: json.verification_uri_complete,
+        expiresIn: json.expires_in,
+        interval: typeof json.interval === "number" && json.interval > 0 ? json.interval : 5,
+      },
     };
-  } catch {
-    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      type: "failed",
+      error: `Device code request failed: ${message}`,
+    };
   }
 };
 
@@ -146,7 +207,11 @@ export const pollDeviceAuthorizationToken = async (
         !json?.refresh_token ||
         typeof json?.expires_in !== "number"
       ) {
-        return { type: "failed" };
+        return {
+          type: "failed",
+          error: "Device token response is missing access_token/refresh_token/expires_in.",
+          responseBody: truncateForLog(JSON.stringify(json)),
+        };
       }
 
       return {
@@ -160,13 +225,29 @@ export const pollDeviceAuthorizationToken = async (
 
     let errorCode: string | undefined;
     let interval: number | undefined;
+    let responseBody: string | undefined;
 
     try {
-      const json = (await res.json()) as { error?: string; interval?: number };
+      const json = (await res.json()) as {
+        error?: string;
+        interval?: number;
+        error_description?: string;
+      };
       errorCode = json.error;
       interval = json.interval;
+      responseBody = truncateForLog(
+        JSON.stringify({
+          ...(json.error ? { error: json.error } : {}),
+          ...(json.error_description ? { error_description: json.error_description } : {}),
+          ...(typeof json.interval === "number" ? { interval: json.interval } : {}),
+        }),
+      );
     } catch {
-      // Ignore JSON parse errors and fall through to failed.
+      try {
+        responseBody = truncateForLog(await res.text());
+      } catch {
+        responseBody = undefined;
+      }
     }
 
     if (errorCode === "authorization_pending") {
@@ -191,9 +272,19 @@ export const pollDeviceAuthorizationToken = async (
       return { type: "expired" };
     }
 
-    return { type: "failed" };
-  } catch {
-    return { type: "failed" };
+    return {
+      type: "failed",
+      error: `Device token polling failed with HTTP ${res.status} ${res.statusText}`,
+      status: res.status,
+      ...(errorCode ? { oauthError: errorCode } : {}),
+      ...(responseBody ? { responseBody } : {}),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      type: "failed",
+      error: `Device token polling request failed: ${message}`,
+    };
   }
 };
 
