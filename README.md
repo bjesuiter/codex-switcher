@@ -153,7 +153,7 @@ cdx migrate-secrets
 | Command | Description |
 |---------|-------------|
 | `cdx` | Interactive mode |
-| `cdx login` | Add a new OpenAI account via OAuth (recommended default flow; supports manual URL copy/paste callback completion) |
+| `cdx login` | Add a new OpenAI account via OAuth (recommended default flow; supports manual URL copy/paste callback completion with optional clipboard copy assist) |
 | `cdx login --device-flow` | Add account using OAuth device flow (may fail on some VPS/server IPs due to Cloudflare challenges) |
 | `cdx relogin` | Re-authenticate an existing account via OAuth |
 | `cdx relogin --device-flow` | Re-authenticate interactively using OAuth device flow (may fail on some VPS/server IPs due to Cloudflare challenges) |
@@ -177,7 +177,7 @@ cdx migrate-secrets
 | `cdx --version` | Show version |
 | `cdx --secret-store legacy-keychain <command>` | Override configured backend for this run (macOS legacy keychain) |
 
-> Tip: On SSH/VPS, prefer `cdx login` (without `--device-flow`) and complete login via manual callback URL/code copy-paste. Device flow can be blocked by Cloudflare challenge pages.
+> Tip: On SSH/VPS, prefer `cdx login` (without `--device-flow`) and complete login via manual callback URL/code copy-paste. The manual flow can offer clipboard copy assist (including OSC52 on compatible terminals) to avoid selecting long URLs. Device flow can be blocked by Cloudflare challenge pages.
 
 ### Shell completion
 

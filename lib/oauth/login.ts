@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import { configExists, loadConfig, saveConfig } from "../config";
 import { openBrowserUrl } from "../platform/browser";
+import { buildClipboardHelperCommand, tryCopyToClipboard } from "../platform/clipboard";
 import { getSecretStoreAdapter } from "../secrets/store";
 import type { Config, OAuthPayload } from "../types";
 import {
@@ -306,6 +307,39 @@ const promptPortConflictChoice = async (
   return selection as PortConflictChoice;
 };
 
+const maybeCopyAuthorizationUrlToClipboard = async (
+  authorizationUrl: string,
+): Promise<void> => {
+  const isInteractive = Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
+
+  if (isInteractive) {
+    const shouldCopy = await p.confirm({
+      message: "Copy login URL to clipboard now?",
+      initialValue: true,
+    });
+
+    if (p.isCancel(shouldCopy) || !shouldCopy) {
+      return;
+    }
+  }
+
+  const copyResult = tryCopyToClipboard(authorizationUrl);
+
+  if (copyResult.ok) {
+    p.log.success(`Copied login URL to clipboard via ${copyResult.method}.`);
+    return;
+  }
+
+  p.log.warning(
+    `Could not copy login URL automatically${copyResult.error ? ` (${copyResult.error})` : ""}.`,
+  );
+
+  const helper = buildClipboardHelperCommand(authorizationUrl);
+  if (helper) {
+    p.log.message(`Try this copy command:\n${helper}`);
+  }
+};
+
 const promptManualAuthorizationCode = async (
   authorizationUrl: string,
   expectedState: string,
@@ -315,6 +349,8 @@ const promptManualAuthorizationCode = async (
   p.log.message(
     "After approving, copy the full callback URL (or just the 'code' value) and paste it below.",
   );
+
+  await maybeCopyAuthorizationUrlToClipboard(authorizationUrl);
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const response = await p.text({
