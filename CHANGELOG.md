@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.8.1
+
+### Fixes
+
+- Add platform-native secure-store write/read/delete probes to `cdx doctor` on Linux, macOS, and Windows, so runtime secure-store failures are detected directly instead of only reporting adapter capability.
+- Linux secure-store: treat Secret Service `no result found` responses as missing-entry cases and classify generic `Couldn't access platform secure storage` failures as unavailable-store errors with actionable guidance.
+
 ## 1.8.0
 
 ### Features

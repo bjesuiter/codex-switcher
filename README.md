@@ -6,19 +6,12 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.0
-
-#### Features
-
-- Added manual OAuth URL clipboard assist for login/relogin fallback flow, including an opt-in copy prompt and non-blocking behavior.
-- Added cross-platform clipboard copy strategies for auth URLs (local clipboard commands + OSC52 terminal fallback).
-- Added tmux/screen OSC52 framing support and fallback copy-command hints when auto-copy is unavailable.
+### 1.8.1
 
 #### Fixes
 
-- Clarified fallback guidance: manual URL copy/paste flow is now the recommended browser-launch fallback, while `--device-flow` may fail on some VPS/server IPs due to Cloudflare challenges.
-- Linux secure-store login reliability: treat native Secret Service "no matching entry" responses as missing-entry cases and improve unavailable-store error guidance.
-- Added Mosh-specific clipboard heuristics/warnings so OSC52 copy reports are less misleading when clipboard updates are unreliable.
+- Added platform-native secure-store write/read/delete probes to `cdx doctor` on Linux, macOS, and Windows, so runtime secure-store failures are detected directly instead of only reporting adapter capability.
+- Linux secure-store error handling now treats Secret Service `no result found` responses as missing-entry cases and classifies generic `Couldn't access platform secure storage` failures as unavailable-store errors with actionable guidance.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
