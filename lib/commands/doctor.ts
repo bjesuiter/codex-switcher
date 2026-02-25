@@ -150,14 +150,37 @@ const isCommandAvailable = async (commandName: string): Promise<boolean> => {
   return shellCheck.ok;
 };
 
+const GNOME_KEYRING_CMDLINE_PATTERN = /(^|\/)gnome-keyring-daemon(\s|$)/;
+
 const checkGnomeKeyringRunning = async (): Promise<{
   ok: boolean;
   details?: string;
 }> => {
+  if (await isCommandAvailable("ps")) {
+    const psResult = await runCommandCapture("ps", ["-A", "-o", "args="]);
+
+    if (psResult.ok) {
+      const hasDaemon = psResult.stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .some((line) => GNOME_KEYRING_CMDLINE_PATTERN.test(line));
+
+      if (hasDaemon) {
+        return { ok: true };
+      }
+
+      return {
+        ok: false,
+        details: "No gnome-keyring-daemon process found.",
+      };
+    }
+  }
+
   if (await isCommandAvailable("pgrep")) {
     const pgrepResult = await runCommandCapture("pgrep", [
       "-f",
-      "(^|/)gnome-keyring-daemon( |$)",
+      "gnome-keyring-daemon",
     ]);
 
     if (pgrepResult.ok) {
@@ -171,19 +194,9 @@ const checkGnomeKeyringRunning = async (): Promise<{
     };
   }
 
-  const psFallback = await runCommandCapture("sh", [
-    "-lc",
-    "ps -A -o comm= | grep -q '^gnome-keyring-daemon$'",
-  ]);
-
-  if (psFallback.ok) {
-    return { ok: true };
-  }
-
   return {
     ok: false,
-    details: extractCommandFailureDetails(psFallback) ??
-      "No gnome-keyring-daemon process found.",
+    details: "Neither ps nor pgrep is available to check gnome-keyring-daemon.",
   };
 };
 
@@ -529,6 +542,12 @@ const maybeRunLinuxSecretStoreChecklist = async (): Promise<void> => {
   process.stdout.write(
     `  Guided checklist summary: ${passed}/${checklist.length} checks passed.\n`,
   );
+
+  if (passed === checklist.length) {
+    process.stdout.write(
+      "  Note: basic checks passed, but secure-store probe still failed. This can happen when the keyring is locked, has no default collection, or your D-Bus/session setup prevents Secret Service writes.\n",
+    );
+  }
 };
 
 export const registerDoctorCommand = (program: Command): void => {
