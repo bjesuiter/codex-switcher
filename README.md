@@ -167,6 +167,8 @@ cdx migrate-secrets
 | `cdx migrate-secrets` | Migrate macOS legacy keychain entries to cross-keychain and switch config to `auto` |
 | `cdx doctor` | Show auth file paths/state and runtime capabilities |
 | `cdx doctor --check-keychain-acl` | Detect macOS keychain ACL/runtime mismatches (`cdx`/Bun vs legacy `security` CLI), warn about prompt-heavy setups, and suggest `cdx migrate-secrets` (slow) |
+| `cdx keyring check` | Run focused Linux gnome-keyring dependency/runtime checks and secure-store probe |
+| `cdx keyring install` | Install Linux keyring dependencies on Debian/Ubuntu/Mint (`--yes`, `--skip-check`) |
 | `cdx usage` | Show usage overview for all accounts |
 | `cdx usage <account>` | Show detailed usage for a specific account |
 | `cdx update-self` | Update cdx to the latest version |

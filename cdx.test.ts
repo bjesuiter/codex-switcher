@@ -33,6 +33,15 @@ describe("cdx CLI", () => {
       expect(doctorCmd?.description()).toBe("Show auth file paths and runtime capabilities");
     });
 
+    it("has keyring command registered", () => {
+      const program = createProgram();
+      const keyringCmd = program.commands.find((cmd) => cmd.name() === "keyring");
+      expect(keyringCmd).toBeDefined();
+      expect(keyringCmd?.description()).toBe(
+        "Setup and diagnose Linux gnome-keyring/Secret Service support",
+      );
+    });
+
     it("has update-self command registered", () => {
       const program = createProgram();
       const updateSelfCmd = program.commands.find((cmd) => cmd.name() === "update-self");
@@ -95,6 +104,7 @@ describe("cdx CLI", () => {
       expect(output).toContain("switch");
       expect(output).toContain("migrate-secrets");
       expect(output).toContain("doctor");
+      expect(output).toContain("keyring");
       expect(output).toContain("--help");
       expect(output).toContain("--version");
       expect(output).toContain("--secret-store");
@@ -109,6 +119,30 @@ describe("cdx CLI", () => {
 
       const output = result.stdout.toString();
       expect(output).toContain("--check-keychain-acl");
+    });
+
+    it("shows keyring command help with install/check subcommands", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "keyring", "--help"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(output).toContain("install");
+      expect(output).toContain("check");
+    });
+
+    it("shows keyring install help for automation flags", async () => {
+      const result = Bun.spawnSync({
+        cmd: ["bun", "run", "cdx.ts", "keyring", "install", "--help"],
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const output = result.stdout.toString();
+      expect(output).toContain("--yes");
+      expect(output).toContain("--skip-check");
     });
 
     it("shows login-specific help for device flow flag", async () => {

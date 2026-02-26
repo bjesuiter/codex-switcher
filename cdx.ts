@@ -10,6 +10,7 @@ import {
   registerDefaultInteractiveAction,
   registerDoctorCommand,
   registerHelpCommand,
+  registerKeyringCommand,
   registerLabelCommand,
   registerLoginCommand,
   registerMigrateSecretsCommand,
@@ -258,6 +259,7 @@ export const createProgram = (
   registerSwitchCommand(program);
   registerLabelCommand(program);
   registerMigrateSecretsCommand(program);
+  registerKeyringCommand(program);
   registerStatusCommand(program);
   registerDoctorCommand(program);
   registerUsageCommand(program);
