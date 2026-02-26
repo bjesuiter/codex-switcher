@@ -5,6 +5,8 @@ import {
   setPassword,
   useBackend,
 } from "@bjesuiter/cross-keychain";
+import { spawn } from "node:child_process";
+import * as p from "@clack/prompts";
 import type { OAuthPayload } from "../types";
 import { getCrossKeychainBackendOverrides } from "./cross-keychain-overrides";
 import { ensureFallbackConsent } from "./fallback-consent";
@@ -31,6 +33,7 @@ const STORE_UNAVAILABLE_MARKERS = [
   "unable to initialize linux secure-store backend",
   "no keyring backend could be initialized",
   "native keyring module not available",
+  "linux secure store is unavailable",
   "secret service operation failed",
   "couldn't access platform secure storage",
   "dbus",
@@ -198,6 +201,158 @@ const withService = async <T>(
   }
 };
 
+type CommandWithInputResult = {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  error?: string;
+};
+
+const isInteractiveTerminal = (): boolean =>
+  Boolean(process.stdin.isTTY) && Boolean(process.stdout.isTTY);
+
+const applyEnvAssignments = (raw: string): void => {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*);?$/);
+    if (!match) {
+      continue;
+    }
+
+    const key = match[1];
+    const value = match[2].replace(/;$/, "");
+    if (key) {
+      process.env[key] = value;
+    }
+  }
+};
+
+const runCommandWithInput = async (
+  command: string,
+  args: string[],
+  input: string,
+): Promise<CommandWithInputResult> =>
+  await new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let spawnError: string | null = null;
+
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    child.once("error", (error) => {
+      spawnError = error.message;
+    });
+
+    child.once("close", (code) => {
+      resolve({
+        ok: spawnError === null && code === 0,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        ...(spawnError ? { error: spawnError } : {}),
+      });
+    });
+
+    child.stdin?.write(input);
+    child.stdin?.end();
+  });
+
+const attemptInteractiveLinuxKeyringUnlock = async (): Promise<boolean> => {
+  if (!isInteractiveTerminal()) {
+    return false;
+  }
+
+  const shouldUnlock = await p.confirm({
+    message: "Linux keyring appears locked. Unlock it now?",
+    initialValue: true,
+  });
+
+  if (p.isCancel(shouldUnlock) || !shouldUnlock) {
+    return false;
+  }
+
+  const passphrase = await p.password({
+    message: "Enter Linux keyring password:",
+    validate: (value) => {
+      if (!value || !value.trim()) {
+        return "Password is required to unlock keyring.";
+      }
+      return undefined;
+    },
+  });
+
+  if (p.isCancel(passphrase) || !passphrase) {
+    return false;
+  }
+
+  const result = await runCommandWithInput(
+    "gnome-keyring-daemon",
+    ["--unlock", "--components=secrets"],
+    `${passphrase}\n`,
+  );
+
+  if (!result.ok) {
+    const details = result.error || result.stderr || result.stdout;
+    if (details) {
+      process.stderr.write(`cdx: keyring unlock failed (${details})\n`);
+    }
+    return false;
+  }
+
+  applyEnvAssignments(result.stdout);
+  return true;
+};
+
+const withLinuxUnlockRetry = async <T>(
+  run: () => Promise<T>,
+  options: { forWrite?: boolean; retryOnMissingEntryForNativeWrite?: boolean } = {},
+): Promise<T> => {
+  let unlockAttempted = false;
+
+  while (true) {
+    try {
+      return await run();
+    } catch (error) {
+      const kind = classifyLinuxSecureStoreError(error);
+      const canRetryAfterUnlock =
+        !unlockAttempted &&
+        (kind === "store_unavailable" ||
+          (
+            kind === "missing_entry" &&
+            options.forWrite &&
+            options.retryOnMissingEntryForNativeWrite &&
+            selectedBackend === "native-linux"
+          ));
+
+      if (!canRetryAfterUnlock) {
+        throw error;
+      }
+
+      unlockAttempted = true;
+      const unlocked = await attemptInteractiveLinuxKeyringUnlock();
+      if (!unlocked) {
+        throw error;
+      }
+
+      backendInitPromise = null;
+      selectedBackend = null;
+    }
+  }
+};
+
 const trySaveWithSecretServiceFallback = async (
   accountId: string,
   serializedPayload: string,
@@ -226,10 +381,14 @@ export const saveLinuxCrossKeychainPayload = async (
   const serialized = JSON.stringify(payload);
 
   try {
-    await withService(
-      accountId,
-      (service) => setPassword(service, accountId, serialized),
-      { forWrite: true },
+    await withLinuxUnlockRetry(
+      () =>
+        withService(
+          accountId,
+          (service) => setPassword(service, accountId, serialized),
+          { forWrite: true },
+        ),
+      { forWrite: true, retryOnMissingEntryForNativeWrite: true },
     );
     return;
   } catch (error) {
@@ -261,7 +420,9 @@ export const loadLinuxCrossKeychainPayload = async (
   accountId: string,
 ): Promise<OAuthPayload> => {
   try {
-    const raw = await withService(accountId, (service) => getPassword(service, accountId));
+    const raw = await withLinuxUnlockRetry(() =>
+      withService(accountId, (service) => getPassword(service, accountId))
+    );
 
     if (raw === null) {
       throw new Error(`No stored credentials found for account ${accountId}.`);
@@ -280,7 +441,9 @@ export const deleteLinuxCrossKeychainPayload = async (
   accountId: string,
 ): Promise<void> => {
   try {
-    await withService(accountId, (service) => deletePassword(service, accountId));
+    await withLinuxUnlockRetry(() =>
+      withService(accountId, (service) => deletePassword(service, accountId))
+    );
   } catch (error) {
     if (classifyLinuxSecureStoreError(error) === "missing_entry") {
       return;
@@ -293,9 +456,11 @@ export const linuxCrossKeychainPayloadExists = async (
   accountId: string,
 ): Promise<boolean> => {
   try {
-    return await withService(
-      accountId,
-      async (service) => (await getPassword(service, accountId)) !== null,
+    return await withLinuxUnlockRetry(() =>
+      withService(
+        accountId,
+        async (service) => (await getPassword(service, accountId)) !== null,
+      )
     );
   } catch (error) {
     if (classifyLinuxSecureStoreError(error) === "missing_entry") {

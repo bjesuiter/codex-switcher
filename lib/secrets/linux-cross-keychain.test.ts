@@ -34,6 +34,14 @@ describe("classifyLinuxSecureStoreError", () => {
     expect(classifyLinuxSecureStoreError(error)).toBe("store_unavailable");
   });
 
+  it("classifies wrapped Linux secure-store unavailable errors", () => {
+    const error = new Error(
+      "Linux secure store is unavailable. Ensure Secret Service is installed/running.",
+    );
+
+    expect(classifyLinuxSecureStoreError(error)).toBe("store_unavailable");
+  });
+
   it("classifies generic secure-storage access failures as store-unavailable", () => {
     const error = new Error(
       "Couldn't access platform secure storage: Secret Service: session is closed",
