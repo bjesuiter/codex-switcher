@@ -138,6 +138,62 @@ const runCommandCapture = async (
     });
   });
 
+const runCommandCaptureWithInput = async (
+  command: string,
+  args: string[],
+  input: string,
+): Promise<CommandCaptureResult> =>
+  await new Promise((resolve) => {
+    const child = spawn(command, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    let spawnError: string | null = null;
+
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    child.once("error", (error) => {
+      spawnError = error.message;
+    });
+
+    child.stdin?.write(input);
+    child.stdin?.end();
+
+    child.once("close", (code) => {
+      resolve({
+        ok: spawnError === null && code === 0,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        ...(spawnError ? { error: spawnError } : {}),
+      });
+    });
+  });
+
+const runCommandDetached = async (
+  command: string,
+  args: string[],
+): Promise<{ ok: boolean; error?: string }> => {
+  try {
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: message };
+  }
+};
+
 const extractCommandFailureDetails = (result: CommandCaptureResult): string | undefined =>
   result.error || result.stderr || result.stdout || undefined;
 
@@ -476,9 +532,170 @@ const runLinuxSecretStoreChecklist = async (): Promise<
       ok: gnomeKeyringRunning.ok,
       details: gnomeKeyringRunning.details,
       hint:
-        "Start/unlock gnome-keyring-daemon in your session (for a quick test: `gnome-keyring-daemon --start --components=secrets`).",
+        "Start/unlock gnome-keyring-daemon in your session (cdx can do this interactively).",
     },
   ];
+};
+
+const runSecretToolRoundTripCheck = async (): Promise<{ ok: boolean; details?: string }> => {
+  const id = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const service = `cdx-doctor-secret-service-${id}`;
+  const account = `cdx-doctor-account-${id}`;
+  const value = `cdx-doctor-value-${id}`;
+
+  const storeResult = await runCommandCaptureWithInput(
+    "secret-tool",
+    ["store", "--label=cdx doctor Secret Service probe", "service", service, "account", account],
+    `${value}\n`,
+  );
+
+  if (!storeResult.ok) {
+    return {
+      ok: false,
+      details: extractCommandFailureDetails(storeResult) ?? "secret-tool store failed.",
+    };
+  }
+
+  const lookupResult = await runCommandCapture("secret-tool", [
+    "lookup",
+    "service",
+    service,
+    "account",
+    account,
+  ]);
+
+  if (!lookupResult.ok) {
+    return {
+      ok: false,
+      details: extractCommandFailureDetails(lookupResult) ?? "secret-tool lookup failed.",
+    };
+  }
+
+  if (lookupResult.stdout.trim() !== value) {
+    return {
+      ok: false,
+      details: "secret-tool lookup returned an unexpected value after store.",
+    };
+  }
+
+  const clearResult = await runCommandCapture("secret-tool", [
+    "clear",
+    "service",
+    service,
+    "account",
+    account,
+  ]);
+
+  if (!clearResult.ok) {
+    return {
+      ok: false,
+      details: extractCommandFailureDetails(clearResult) ?? "secret-tool clear failed.",
+    };
+  }
+
+  return { ok: true };
+};
+
+const runLinuxSecretStoreDeepRemediation = async (): Promise<void> => {
+  if (!isInteractiveTerminal()) {
+    return;
+  }
+
+  const hasSecretTool = await isCommandAvailable("secret-tool");
+  const hasSeahorse = await isCommandAvailable("seahorse");
+
+  const shouldStart = await p.confirm({
+    message:
+      "Run deeper Linux Secret Service remediation now? (interactive actions, no copy/paste commands)",
+    initialValue: true,
+  });
+
+  if (p.isCancel(shouldStart) || !shouldStart) {
+    return;
+  }
+
+  while (true) {
+    const action = await p.select<"secret-tool-test" | "open-keyring-manager" | "retry-probe" | "done">({
+      message: "Choose next remediation action:",
+      options: [
+        {
+          value: "secret-tool-test",
+          label: hasSecretTool
+            ? "Run Secret Service write/read/clear test now"
+            : "Run Secret Service write/read/clear test now (secret-tool not found)",
+        },
+        {
+          value: "open-keyring-manager",
+          label: hasSeahorse
+            ? "Open keyring manager now"
+            : "Open keyring manager now (seahorse not found)",
+        },
+        {
+          value: "retry-probe",
+          label: "Retry cdx secure-store probe now",
+        },
+        {
+          value: "done",
+          label: "Done",
+        },
+      ],
+      initialValue: "secret-tool-test",
+    });
+
+    if (p.isCancel(action) || action === "done") {
+      return;
+    }
+
+    if (action === "secret-tool-test") {
+      if (!hasSecretTool) {
+        process.stdout.write(
+          "    secret-tool is not installed; install it first, then rerun this remediation action.\n",
+        );
+        continue;
+      }
+
+      const result = await runSecretToolRoundTripCheck();
+      if (result.ok) {
+        process.stdout.write("    secret-tool roundtrip test passed.\n");
+      } else {
+        process.stdout.write(
+          `    secret-tool roundtrip test failed: ${result.details ?? "unknown error"}\n`,
+        );
+      }
+      continue;
+    }
+
+    if (action === "open-keyring-manager") {
+      if (!hasSeahorse) {
+        process.stdout.write(
+          "    keyring manager app was not found (seahorse). Install it to manage collections/locks interactively.\n",
+        );
+        continue;
+      }
+
+      const opened = await runCommandDetached("seahorse", []);
+      if (!opened.ok) {
+        process.stdout.write(
+          `    failed to open keyring manager: ${opened.error ?? "unknown error"}\n`,
+        );
+      } else {
+        process.stdout.write(
+          "    opened keyring manager. Unlock/create the default keyring, then return here and retry probe.\n",
+        );
+      }
+      continue;
+    }
+
+    const probeResult = await runSecretStoreWriteReadProbe(createProbeAdapterForCurrentPlatform());
+    if (probeResult.ok) {
+      process.stdout.write("    cdx secure-store probe now passes.\n");
+      return;
+    }
+
+    process.stdout.write(
+      `    probe still failing (${probeResult.stage}): ${probeResult.error.message}\n`,
+    );
+  }
 };
 
 const maybeRunLinuxSecretStoreChecklist = async (): Promise<void> => {
@@ -547,6 +764,8 @@ const maybeRunLinuxSecretStoreChecklist = async (): Promise<void> => {
     process.stdout.write(
       "  Note: basic checks passed, but secure-store probe still failed. This can happen when the keyring is locked, has no default collection, or your D-Bus/session setup prevents Secret Service writes.\n",
     );
+
+    await runLinuxSecretStoreDeepRemediation();
   }
 };
 
