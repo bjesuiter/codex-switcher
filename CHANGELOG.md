@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 1.8.6
+
+### Features
+
+- Add Linux `cdx keyring check` to run focused `gnome-keyring` dependency/runtime checks plus a secure-store probe.
+- Add Linux `cdx keyring install` to install required keyring packages on Debian/Ubuntu/Mint, with `--yes` and `--skip-check` support.
+- Expand `cdx doctor` Linux secure-store remediation with deeper guidance and step-by-step follow-up checks when Secret Service/keyring access fails.
+
+### Fixes
+
+- Linux secure-store access: when the backend appears available but the keyring is locked, prompt users to unlock the keyring and retry instead of failing with a generic error.
+
+### Internal
+
+- Update dependencies and tooling: `@bomb.sh/tab` to `^0.0.14`, `@clack/prompts` to `^1.1.0`, `@types/bun` to `^1.3.10`, `@types/node` to `^25.5.0`, and `tsdown` to `^0.21.2`.
+
 ## 1.8.5
 
 ### Fixes

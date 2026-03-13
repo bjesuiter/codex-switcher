@@ -1,6 +1,6 @@
 {
   "name": "@bjesuiter/codex-switcher",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "type": "module",
   "description": "CLI tool to switch between multiple OpenAI accounts for OpenCode",
   "bin": {
@@ -27,14 +27,14 @@
   "license": "MIT",
   "author": "bjesuiter",
   "devDependencies": {
-    "@types/bun": "^1.3.8",
-    "@types/node": "^25.2.1",
-    "tsdown": "^0.20.3"
+    "@types/bun": "^1.3.10",
+    "@types/node": "^25.5.0",
+    "tsdown": "^0.21.2"
   },
   "dependencies": {
     "@bjesuiter/cross-keychain": "1.1.0-jb.0",
-    "@bomb.sh/tab": "^0.0.13",
-    "@clack/prompts": "^1.0.0",
+    "@bomb.sh/tab": "^0.0.14",
+    "@clack/prompts": "^1.1.0",
     "@openauthjs/openauth": "^0.4.3",
     "age-encryption": "^0.3.0",
     "commander": "^14.0.3"

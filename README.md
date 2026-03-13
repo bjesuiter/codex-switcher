@@ -6,11 +6,21 @@ Switch the coding-agents [pi](https://pi.dev/), [codex](https://developers.opena
 
 ## Latest Changes
 
-### 1.8.5
+### 1.8.6
+
+#### Features
+
+- Add Linux `cdx keyring check` for focused `gnome-keyring` dependency/runtime checks plus a secure-store probe.
+- Add Linux `cdx keyring install` to install required keyring packages on Debian/Ubuntu/Mint, with `--yes` and `--skip-check` support.
+- Expand Linux `cdx doctor` secure-store remediation with deeper guidance and step-by-step follow-up checks when Secret Service/keyring access fails.
 
 #### Fixes
 
-- Linux `cdx doctor` guided checks now avoid false-positive `gnome-keyring-daemon` running detection by preferring `ps` command-line matching (with a `pgrep` fallback), and provide clearer guidance when basic checks pass but the secure-store probe still fails (for example locked keyring/default collection/session bus issues).
+- When Linux secure-store access fails because the keyring is locked, `cdx` now prompts you to unlock it and retry instead of only surfacing a generic error.
+
+#### Internal
+
+- Update dependencies and tooling: `@bomb.sh/tab`, `@clack/prompts`, `@types/bun`, `@types/node`, and `tsdown`.
 
 see full changelog here: https://github.com/bjesuiter/codex-switcher/blob/main/CHANGELOG.md
 
