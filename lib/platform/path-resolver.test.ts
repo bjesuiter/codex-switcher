@@ -16,6 +16,7 @@ describe("resolveRuntimePaths", () => {
     expect(resolved.authPath).toBe(
       path.join(home, ".local", "share", "opencode", "auth.json"),
     );
+    expect(resolved.authCompatPaths).toEqual([]);
   });
 
   it("respects XDG env overrides", () => {
@@ -33,9 +34,10 @@ describe("resolveRuntimePaths", () => {
 
     expect(resolved.configDir).toBe(path.join(configHome, "cdx"));
     expect(resolved.authPath).toBe(path.join(dataHome, "opencode", "auth.json"));
+    expect(resolved.authCompatPaths).toEqual([]);
   });
 
-  it("uses APPDATA/LOCALAPPDATA on win32", () => {
+  it("uses XDG data default for OpenCode and LOCALAPPDATA compatibility on win32", () => {
     const resolved = resolveRuntimePaths({
       platform: "win32",
       env: {
@@ -50,8 +52,47 @@ describe("resolveRuntimePaths", () => {
       "C:\\Users\\tester\\AppData\\Roaming\\cdx",
     );
     expect(resolved.authPath).toBe(
+      "C:\\Users\\tester\\.local\\share\\opencode\\auth.json",
+    );
+    expect(resolved.authCompatPaths).toEqual([
+      "C:\\Users\\tester\\AppData\\Local\\opencode\\auth.json",
+    ]);
+  });
+
+  it("respects XDG_DATA_HOME for OpenCode auth on win32", () => {
+    const resolved = resolveRuntimePaths({
+      platform: "win32",
+      env: {
+        APPDATA: "C:\\Users\\tester\\AppData\\Roaming",
+        LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
+        XDG_DATA_HOME: "D:\\xdg-data",
+      },
+      homeDir: "C:\\Users\\tester",
+    });
+
+    expect(resolved.authPath).toBe("D:\\xdg-data\\opencode\\auth.json");
+    expect(resolved.authCompatPaths).toEqual([
+      "C:\\Users\\tester\\AppData\\Local\\opencode\\auth.json",
+    ]);
+  });
+
+  it("can resolve the same win32 primary and compatibility OpenCode auth path", () => {
+    const resolved = resolveRuntimePaths({
+      platform: "win32",
+      env: {
+        APPDATA: "C:\\Users\\tester\\AppData\\Roaming",
+        LOCALAPPDATA: "C:\\Users\\tester\\AppData\\Local",
+        XDG_DATA_HOME: "C:\\Users\\tester\\AppData\\Local",
+      },
+      homeDir: "C:\\Users\\tester",
+    });
+
+    expect(resolved.authPath).toBe(
       "C:\\Users\\tester\\AppData\\Local\\opencode\\auth.json",
     );
+    expect(resolved.authCompatPaths).toEqual([
+      "C:\\Users\\tester\\AppData\\Local\\opencode\\auth.json",
+    ]);
   });
 
   it("respects PI_CODING_AGENT_DIR override", () => {

@@ -10,6 +10,7 @@ export type PathConfig = {
   configDir: string;
   configPath: string;
   authPath: string;
+  authCompatPaths: string[];
   codexAuthPath: string;
   piAuthPath: string;
 };
@@ -23,6 +24,7 @@ const toPathConfig = (paths: ResolvedPathValues): PathConfig => ({
   configDir: paths.configDir,
   configPath: paths.configPath,
   authPath: paths.authPath,
+  authCompatPaths: paths.authCompatPaths,
   codexAuthPath: paths.codexAuthPath,
   piAuthPath: paths.piAuthPath,
 });
@@ -71,6 +73,7 @@ export const createTestPaths = (testDir: string): PathConfig => ({
   configDir: path.join(testDir, "config"),
   configPath: path.join(testDir, "config", "accounts.json"),
   authPath: path.join(testDir, "auth", "auth.json"),
+  authCompatPaths: [],
   codexAuthPath: path.join(testDir, "codex", "auth.json"),
   piAuthPath: path.join(testDir, "pi", "auth.json"),
 });

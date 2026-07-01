@@ -13,6 +13,7 @@ export type ResolvedPathValues = {
   configDir: string;
   configPath: string;
   authPath: string;
+  authCompatPaths: string[];
   codexAuthPath: string;
   piAuthPath: string;
 };
@@ -41,13 +42,28 @@ const resolvePiAuthPath = (
     : path.join(homeDir, ".pi", "agent", "auth.json");
 };
 
+const resolveOpenCodeAuthPath = (
+  env: NodeJS.ProcessEnv,
+  homeDir: string,
+  platform: NodeJS.Platform,
+): string => {
+  const xdgDataHome = envValue(env, "XDG_DATA_HOME");
+
+  if (platform === "win32") {
+    const dataHome = xdgDataHome ?? path.win32.join(homeDir, ".local", "share");
+    return path.win32.join(dataHome, "opencode", "auth.json");
+  }
+
+  const dataHome = xdgDataHome ?? path.join(homeDir, ".local", "share");
+  return path.join(dataHome, "opencode", "auth.json");
+};
+
 const resolveXdgPaths = (
   env: NodeJS.ProcessEnv,
   homeDir: string,
   platform: NodeJS.Platform,
 ): ResolvedPathValues => {
   const configHome = envValue(env, "XDG_CONFIG_HOME") ?? path.join(homeDir, ".config");
-  const dataHome = envValue(env, "XDG_DATA_HOME") ?? path.join(homeDir, ".local", "share");
 
   const configDir = path.join(configHome, "cdx");
 
@@ -55,7 +71,8 @@ const resolveXdgPaths = (
     profile: "xdg",
     configDir,
     configPath: path.join(configDir, "accounts.json"),
-    authPath: path.join(dataHome, "opencode", "auth.json"),
+    authPath: resolveOpenCodeAuthPath(env, homeDir, platform),
+    authCompatPaths: [],
     codexAuthPath: path.join(homeDir, ".codex", "auth.json"),
     piAuthPath: resolvePiAuthPath(env, homeDir, platform),
   };
@@ -74,7 +91,8 @@ const resolveWindowsPaths = (env: NodeJS.ProcessEnv, homeDir: string): ResolvedP
     profile: "windows-appdata",
     configDir,
     configPath: winPath.join(configDir, "accounts.json"),
-    authPath: winPath.join(localAppData, "opencode", "auth.json"),
+    authPath: resolveOpenCodeAuthPath(env, homeDir, "win32"),
+    authCompatPaths: [winPath.join(localAppData, "opencode", "auth.json")],
     codexAuthPath: winPath.join(homeDir, ".codex", "auth.json"),
     piAuthPath: resolvePiAuthPath(env, homeDir, "win32"),
   };
