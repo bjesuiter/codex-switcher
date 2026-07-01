@@ -2,6 +2,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import * as p from "@clack/prompts";
 import type { Command } from "commander";
+import { dedupeAuthPaths } from "../auth";
 import { getPaths } from "../paths";
 import { getStatus } from "../status";
 import { getKeychainDecryptAccessByServiceAsync } from "../keychain-acl";
@@ -795,6 +796,13 @@ export const registerDoctorCommand = (program: Command): void => {
           : "not found";
         process.stdout.write(`  OpenCode: ${ocStatus}\n`);
         process.stdout.write(`    Path: ${paths.authPath}\n`);
+        const [, ...compatPaths] = dedupeAuthPaths([
+          paths.authPath,
+          ...paths.authCompatPaths,
+        ]);
+        for (const compatPath of compatPaths) {
+          process.stdout.write(`    Compatibility path: ${compatPath}\n`);
+        }
 
         const cxStatus = status.codexAuth.exists
           ? `active: ${resolveLabel(status.codexAuth.accountId)}`

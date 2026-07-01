@@ -15,8 +15,35 @@ const readExistingJson = async (filePath: string): Promise<Record<string, unknow
   }
 };
 
-export const writeAuthFile = async (payload: OAuthPayload): Promise<void> => {
-  const { authPath } = getPaths();
+const normalizeAuthPathKey = (
+  authPath: string,
+  platform: NodeJS.Platform,
+): string => {
+  const normalized = path.normalize(authPath);
+  return platform === "win32" ? normalized.toLowerCase() : normalized;
+};
+
+export const dedupeAuthPaths = (
+  authPaths: string[],
+  platform: NodeJS.Platform = process.platform,
+): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const authPath of authPaths) {
+    const key = normalizeAuthPathKey(authPath, platform);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(authPath);
+  }
+
+  return result;
+};
+
+const writeOpenCodeAuthFileAtPath = async (
+  authPath: string,
+  payload: OAuthPayload,
+): Promise<void> => {
   const authDir = path.dirname(authPath);
   await mkdir(authDir, { recursive: true });
 
@@ -31,6 +58,14 @@ export const writeAuthFile = async (payload: OAuthPayload): Promise<void> => {
   };
 
   await writeFile(authPath, JSON.stringify(existing, null, 2), "utf8");
+};
+
+export const writeAuthFile = async (payload: OAuthPayload): Promise<void> => {
+  const { authPath, authCompatPaths } = getPaths();
+
+  for (const targetPath of dedupeAuthPaths([authPath, ...authCompatPaths])) {
+    await writeOpenCodeAuthFileAtPath(targetPath, payload);
+  }
 };
 
 export const writeCodexAuthFile = async (payload: OAuthPayload): Promise<void> => {

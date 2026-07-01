@@ -3,7 +3,13 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeAllAuthFiles, writeAuthFile, writeCodexAuthFile, writePiAuthFile } from "./auth";
+import {
+  dedupeAuthPaths,
+  writeAllAuthFiles,
+  writeAuthFile,
+  writeCodexAuthFile,
+  writePiAuthFile,
+} from "./auth";
 import { loadConfig, saveConfig } from "./config";
 import { createTestPaths, getPaths, resetPaths, setPaths } from "./paths";
 import { writeActiveAuthFilesIfCurrent } from "./refresh";
@@ -133,6 +139,52 @@ describe("switch command utilities", () => {
       expect(parsed.custom.foo).toBe("bar");
       expect(parsed.openai.type).toBe("oauth");
       expect(parsed.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+
+    it("writes OpenCode auth to compatibility paths while preserving each file", async () => {
+      const paths = getPaths();
+      const compatPath = path.join(testDir, "compat", "opencode", "auth.json");
+      setPaths({ authCompatPaths: [compatPath] });
+
+      mkdirSync(path.dirname(paths.authPath), { recursive: true });
+      mkdirSync(path.dirname(compatPath), { recursive: true });
+      await writeFile(
+        paths.authPath,
+        JSON.stringify({ "opencode-go": { type: "api", key: "keep-primary" } }, null, 2),
+        "utf8",
+      );
+      await writeFile(
+        compatPath,
+        JSON.stringify({ openrouter: { type: "api", key: "keep-compat" } }, null, 2),
+        "utf8",
+      );
+
+      await writeAuthFile(TEST_PAYLOAD_1);
+
+      const primary = JSON.parse(await readFile(paths.authPath, "utf8"));
+      const compat = JSON.parse(await readFile(compatPath, "utf8"));
+
+      expect(primary["opencode-go"].key).toBe("keep-primary");
+      expect(primary.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
+      expect(compat.openrouter.key).toBe("keep-compat");
+      expect(compat.openai.accountId).toBe(TEST_PAYLOAD_1.accountId);
+    });
+
+    it("deduplicates OpenCode auth write paths", () => {
+      const authPath = path.join(testDir, "auth", "auth.json");
+
+      expect(dedupeAuthPaths([authPath, authPath])).toEqual([authPath]);
+    });
+
+    it("deduplicates Windows OpenCode auth paths case-insensitively", () => {
+      const authPath = "C:\\Users\\alice\\AppData\\Local\\opencode\\auth.json";
+
+      expect(
+        dedupeAuthPaths(
+          [authPath, "c:\\users\\alice\\appdata\\local\\opencode\\auth.json"],
+          "win32",
+        ),
+      ).toEqual([authPath]);
     });
   });
 
