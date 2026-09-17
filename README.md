@@ -54,7 +54,7 @@ So: switching between two $20 plans is the poor man's $100 plan for OpenAI. ^^
 ## Install
 
 ```bash
-bun add -g @bjesuiter/codex-switch
+bun add -g @bjesuiter/codex-switcher
 ```
 
 This exposes the `cdx` binary globally.
