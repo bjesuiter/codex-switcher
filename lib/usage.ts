@@ -142,8 +142,8 @@ const formatWindowLabel = (seconds: number): string => {
   return `${Math.round(hours)}h`;
 };
 
-const formatResetCountdown = (resetAtUnix: number): string => {
-  const diff = resetAtUnix * 1000 - Date.now();
+const formatResetCountdown = (resetAtUnix: number, now: number): string => {
+  const diff = resetAtUnix * 1000 - now;
   if (diff <= 0) return "now";
 
   const minutes = Math.floor(diff / 60000);
@@ -156,6 +156,18 @@ const formatResetCountdown = (resetAtUnix: number): string => {
   return `${minutes}m`;
 };
 
+const formatReset = (resetAtUnix: number, now: number): string => {
+  const reset = new Date(resetAtUnix * 1000);
+  const today = new Date(now);
+  const time = `${String(reset.getHours()).padStart(2, "0")}:${String(reset.getMinutes()).padStart(2, "0")}`;
+  const sameYear = reset.getFullYear() === today.getFullYear();
+  const sameDay = sameYear && reset.getMonth() === today.getMonth() && reset.getDate() === today.getDate();
+  const month = reset.toLocaleString("en-US", { month: "short" });
+  const date = sameDay ? "" : `${month} ${reset.getDate()}${sameYear ? "" : ` ${reset.getFullYear()}`} `;
+
+  return `${formatResetCountdown(resetAtUnix, now)} (at ${date}${time})`;
+};
+
 const formatPercentageBar = (usedPercent: number): string => {
   const width = 20;
   const filled = Math.round((usedPercent / 100) * width);
@@ -163,27 +175,28 @@ const formatPercentageBar = (usedPercent: number): string => {
   return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${usedPercent}% used`;
 };
 
-const formatWindow = (label: string, w: WindowSnapshot): string[] => {
+const formatWindow = (label: string, w: WindowSnapshot, now: number): string[] => {
   return [
     `${label} (${formatWindowLabel(w.limit_window_seconds)} window):`,
     `  ${formatPercentageBar(w.used_percent)}`,
-    `  Resets in: ${formatResetCountdown(w.reset_at)}`,
+    `  Resets in: ${formatReset(w.reset_at, now)}`,
   ];
 };
 
 export const formatUsage = (usage: UsageResponse): string => {
   const lines: string[] = [];
+  const now = Date.now();
 
   const plan = usage.plan_type ?? "unknown";
   lines.push(`Plan: ${plan}`);
   lines.push("");
 
   if (usage.rate_limit?.primary_window) {
-    lines.push(...formatWindow("Primary", usage.rate_limit.primary_window));
+    lines.push(...formatWindow("Primary", usage.rate_limit.primary_window, now));
   }
 
   if (usage.rate_limit?.secondary_window) {
-    lines.push(...formatWindow("Secondary", usage.rate_limit.secondary_window));
+    lines.push(...formatWindow("Secondary", usage.rate_limit.secondary_window, now));
   }
 
   if (usage.credits) {
@@ -211,6 +224,7 @@ export const formatUsageCompact = (usage: UsageResponse): string => {
 };
 
 export const formatUsageBars = (usage: UsageResponse, indent = "    "): string[] => {
+  const now = Date.now();
   const windows: { label: string; window: WindowSnapshot }[] = [];
   if (usage.rate_limit?.primary_window) {
     windows.push({ label: formatWindowLabel(usage.rate_limit.primary_window.limit_window_seconds), window: usage.rate_limit.primary_window });
@@ -222,7 +236,7 @@ export const formatUsageBars = (usage: UsageResponse, indent = "    "): string[]
   const maxLabelLen = Math.max(...windows.map((w) => w.label.length), 0);
   return windows.map(({ label, window: w }) => {
     const paddedLabel = label.padEnd(maxLabelLen);
-    return `${indent}${paddedLabel}  ${formatPercentageBar(w.used_percent)}  resets in ${formatResetCountdown(w.reset_at)}`;
+    return `${indent}${paddedLabel}  ${formatPercentageBar(w.used_percent)}  resets in ${formatReset(w.reset_at, now)}`;
   });
 };
 

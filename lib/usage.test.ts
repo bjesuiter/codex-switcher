@@ -1,12 +1,83 @@
-import { describe, expect, it, afterEach } from "bun:test";
+import { describe, expect, it, beforeEach, afterEach, setSystemTime } from "bun:test";
 import {
   formatUsage,
   formatUsageCompact,
+  formatUsageBars,
   formatUsageOverview,
   fetchUsageRaw,
   type UsageResponse,
   type AccountUsageEntry,
 } from "./usage";
+
+describe("reset time display", () => {
+  const originalTimezone = process.env.TZ;
+
+  beforeEach(() => {
+    process.env.TZ = "Asia/Taipei";
+    setSystemTime(new Date("2026-10-05T21:20:00+08:00"));
+  });
+
+  afterEach(() => {
+    setSystemTime();
+    if (originalTimezone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimezone;
+    }
+  });
+
+  const usageResettingAt = (date: string, windowSeconds = 18000): UsageResponse => ({
+    rate_limit: {
+      primary_window: {
+        used_percent: 3,
+        reset_at: new Date(date).getTime() / 1000,
+        limit_window_seconds: windowSeconds,
+      },
+    },
+  });
+
+  it("shows only the local 24-hour time for a reset today in both output formats", () => {
+    const usage = usageResettingAt("2026-10-05T23:30:00+08:00");
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in 2h 10m (at 23:30)");
+    expect(formatUsage(usage)).toContain("Resets in: 2h 10m (at 23:30)");
+  });
+
+  it("includes the date when a five-hour window crosses midnight", () => {
+    const usage = usageResettingAt("2026-10-06T02:13:00+08:00");
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in 4h 53m (at Oct 6 02:13)");
+  });
+
+  it("includes the date for a weekly window without changing the countdown format", () => {
+    const usage: UsageResponse = {
+      rate_limit: {
+        secondary_window: {
+          used_percent: 3,
+          reset_at: new Date("2026-10-11T18:59:00+08:00").getTime() / 1000,
+          limit_window_seconds: 604800,
+        },
+      },
+    };
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in 141h 39m (at Oct 11 18:59)");
+    expect(formatUsage(usage)).toContain("Resets in: 141h 39m (at Oct 11 18:59)");
+  });
+
+  it("includes the year when the reset crosses into the next year", () => {
+    setSystemTime(new Date("2026-12-31T23:00:00+08:00"));
+    const usage = usageResettingAt("2027-01-01T03:22:00+08:00");
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in 4h 22m (at Jan 1 2027 03:22)");
+  });
+
+  it("uses the local date even when the API timestamp is on a different UTC day", () => {
+    setSystemTime(new Date("2026-10-06T00:00:00+08:00"));
+    const usage = usageResettingAt("2026-10-05T19:22:00Z");
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in 3h 22m (at 03:22)");
+  });
+
+  it("preserves now for an elapsed reset", () => {
+    const usage = usageResettingAt("2026-10-05T21:19:00+08:00");
+    expect(formatUsageBars(usage)[0]).toEndWith("resets in now (at 21:19)");
+  });
+});
 
 describe("formatUsage", () => {
   it("shows plan type", () => {
